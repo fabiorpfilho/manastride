@@ -1,19 +1,18 @@
 import pygame
 
-
+# /*
+# Classe básica para todos os objetos do jogo
+#  */
 class Object(pygame.sprite.Sprite):
 
-    def __init__(self, x, y, width, height, health=100, attackable=False, solid=False, invicible=False, color=(255, 255, 255)):
+    def __init__(self, x, y, width, height, color=(255, 255, 255), solid=False):
         super().__init__()
         self.x = x
         self.y = y
         self.width = width
         self.height = height
-        self.health = health
-        self.attackable = attackable
-        self.invincible = invicible
-        self.solid = solid
         self.color = color
+        self.solid = solid
 
         self.image = pygame.Surface((self.width, self.height))
         self.image.fill(self.color)
