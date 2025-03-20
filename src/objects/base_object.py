@@ -1,19 +1,15 @@
-import pygame
+"""Classe básica para todos os objetos do jogo"""
 
-# /*
-# Classe básica para todos os objetos do jogo
-#  */
+import pygame
+from pygame.math import Vector2
+
 class Object(pygame.sprite.Sprite):
 
-    def __init__(self, x, y, width, height, color=(255, 255, 255), solid=False):
+    def __init__(self, position, size):
         super().__init__()
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.color = color
-        self.solid = solid
-
-        self.image = pygame.Surface((self.width, self.height))
-        self.image.fill(self.color)
-        self.rect = self.image.get_rect(topleft=(self.x, self.y))
+        self.position = Vector2(position)
+        self.size = Vector2(size)
+   
+        self.image = pygame.Surface((self.size))
+        self.rect = self.image.get_rect(
+            topleft=(self.position.x, self.position.y))
