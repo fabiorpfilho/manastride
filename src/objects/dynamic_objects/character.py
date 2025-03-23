@@ -1,11 +1,11 @@
-from objects.entity_with_sprite import EntityWithSprite
+from objects.entity_with_animation import EntityWithAnimation
 from pygame.math import Vector2
 # /*
 # Classe para os personagens, que são entidades dinamicas/moveis, como inimigos e npcs
 #  */
 
 
-class Character(EntityWithSprite):
+class Character(EntityWithAnimation):
     def __init__(self, position, size, sprite=(0, 255, 0),  
                  solid=True, collide_damage=5, invincible=False, health=100, attackable=True, attack_speed=0, 
                  damage=10,  speed=3, gravity=1, movement=(0, 0), jump_power=10):
