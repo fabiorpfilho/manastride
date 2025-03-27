@@ -8,3 +8,4 @@ class EntityWithAnimation(Object):
 
         self.sprite = sprite
         self.image.fill(self.sprite)
+# A ser construido
