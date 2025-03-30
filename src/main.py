@@ -11,9 +11,6 @@ pygame.init()
 # Já em relação à POO, ao se referir a um atributo de uma classe, usar o this para deixar claro que é de uma classe e não uma variavel qualquer
 # ou sempre nomear o atributo com m_ (member), ex: m_position
 
-# 
-# 
-
 WIDTH, HEIGHT = 1600, 900
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Teste de Execução")

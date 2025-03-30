@@ -2,7 +2,7 @@ import pygame
 import json
 from objects.static_objects.terrain import Terrain
 from objects.dynamic_objects.player import Player
-
+from collision_manager import CollisionManager
 
 class Level:
     def __init__(self, screen, level_name):
@@ -10,7 +10,7 @@ class Level:
         self.all_sprites = pygame.sprite.Group()
         self.platforms = pygame.sprite.Group()
         self.background_color = [0, 0, 0]
-        self.tile_size = 32  # Valor padrão
+        self.tile_size = 32 
 
         try:
             with open(f"src/levels/{level_name}.json", "r") as file:
@@ -27,6 +27,8 @@ class Level:
         self.player = Player(position=(spawn_x, spawn_y),
                              size=(50, 50), speed=5, jump_power=15)
         self.all_sprites.add(self.player)
+        
+        self.collision_manager = CollisionManager(self.player, self.platforms, self.screen.get_width())
 
         if "tilemap" in level_data:
             self._process_tilemap(level_data["tilemap"])
@@ -35,17 +37,14 @@ class Level:
 
 
     def _process_tilemap(self, tilemap):
-        """Processa o formato baseado em matriz de tiles"""
         legend = tilemap["legend"]
         screen_width, screen_height = self.screen.get_size()
 
         for row_idx, row in enumerate(tilemap["data"]):
-            # Verifica se a linha está dentro dos limites da tela
             y = row_idx * self.tile_size
-            if y > screen_height:  # Pula linhas que estariam fora da tela
+            if y > screen_height:  
                 continue
 
-            # Processa a última linha (chão) de forma diferente
             if row_idx == len(tilemap["data"]) - 1:
                 platform = Terrain(
                     position=(0, y),
@@ -63,7 +62,6 @@ class Level:
                     tile_info = legend[char]
                     x = col_idx * self.tile_size
 
-                    # Verifica se a plataforma está dentro da tela
                     if x > screen_width:
                         col_idx += 1
                         continue
@@ -76,11 +74,10 @@ class Level:
                             else:
                                 break
 
-                        # Ajusta o comprimento para não ultrapassar a tela
                         max_length = (screen_width - x) // self.tile_size
                         sequence_length = min(sequence_length, max_length)
 
-                        if sequence_length > 0:  # Só cria se couber na tela
+                        if sequence_length > 0: 
                             platform = Terrain(
                                 position=(x, y),
                                 size=(self.tile_size *
@@ -105,7 +102,15 @@ class Level:
                 self.platforms.add(platform)
 
     def update(self):
-        self.player.movement_update(self.platforms, self.screen.get_width())
+        keys = pygame.key.get_pressed()
+        self.player.movement.x = -self.player.speed if keys[pygame.K_LEFT] else \
+            self.player.speed if keys[pygame.K_RIGHT] else 0
+
+        if keys[pygame.K_SPACE] and self.player.on_ground:
+            self.player.movement.y = -self.player.jump_power
+            self.player.on_ground = False
+
+        self.collision_manager.update()
 
     def draw(self):
         self.screen.fill(self.background_color)

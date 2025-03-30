@@ -1,1 +1,0 @@
-#Classe que será responsável por gerenciar as colisões entre objetos
