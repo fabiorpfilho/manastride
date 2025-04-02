@@ -17,7 +17,7 @@ class Level:
                 level_data = json.load(file)
         except FileNotFoundError:
             print(
-                f"Erro: O arquivo src/levels/{level_name}.json não foi encontrado!")
+                f"Erro: O arquivo {level_name}.json não foi encontrado!")
             return
 
         self.background_color = level_data.get("background_color", [0, 0, 0])
