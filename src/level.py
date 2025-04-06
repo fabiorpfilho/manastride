@@ -1,3 +1,4 @@
+# level.py
 import pygame
 import json
 from objects.static_objects.terrain import Terrain
@@ -16,25 +17,22 @@ class Level:
             with open(f"src/levels/{level_name}.json", "r") as file:
                 level_data = json.load(file)
         except FileNotFoundError:
-            print(
-                f"Erro: O arquivo {level_name}.json não foi encontrado!")
+            print(f"Erro: O arquivo {level_name}.json não foi encontrado!")
             return
 
         self.background_color = level_data.get("background_color", [0, 0, 0])
         self.tile_size = level_data.get("tile_size", 32)
 
         spawn_x, spawn_y = level_data.get("player_spawn", [100, 300])
-        self.player = Player(position=(spawn_x, spawn_y),
-                             size=(50, 50), speed=5, jump_power=15)
+        self.player = Player(position=(spawn_x, spawn_y), size=(50, 50), speed=5, jump_power=15)
         self.all_sprites.add(self.player)
-        
+
         self.collision_manager = CollisionManager(self.player, self.platforms, self.screen.get_width())
 
         if "tilemap" in level_data:
             self._process_tilemap(level_data["tilemap"])
         elif "tiles" in level_data:
             self._process_legacy_tiles(level_data["tiles"])
-
 
     def _process_tilemap(self, tilemap):
         legend = tilemap["legend"]
@@ -46,10 +44,7 @@ class Level:
                 continue
 
             if row_idx == len(tilemap["data"]) - 1:
-                platform = Terrain(
-                    position=(0, y),
-                    size=(min(len(row) * self.tile_size, screen_width), self.tile_size)
-                )
+                platform = Terrain(position=(0, y), size=(min(len(row) * self.tile_size, screen_width), self.tile_size))
                 self.all_sprites.add(platform)
                 self.platforms.add(platform)
                 continue
@@ -77,41 +72,29 @@ class Level:
                         max_length = (screen_width - x) // self.tile_size
                         sequence_length = min(sequence_length, max_length)
 
-                        if sequence_length > 0: 
-                            platform = Terrain(
-                                position=(x, y),
-                                size=(self.tile_size *
-                                    sequence_length, self.tile_size)
-                            )
+                        if sequence_length > 0:
+                            platform = Terrain(position=(x, y), size=(self.tile_size * sequence_length, self.tile_size))
                             self.all_sprites.add(platform)
                             self.platforms.add(platform)
 
                         col_idx += sequence_length
                         continue
-
                 col_idx += 1
 
     def _process_legacy_tiles(self, tiles):
         for item in tiles:
             position = item["position"]
             size = item.get("size", [self.tile_size, self.tile_size])
-
             if item["type"] == "platform":
                 platform = Terrain(position, size)
                 self.all_sprites.add(platform)
                 self.platforms.add(platform)
 
     def update(self):
-        keys = pygame.key.get_pressed()
-        self.player.movement.x = -self.player.speed if keys[pygame.K_LEFT] else \
-            self.player.speed if keys[pygame.K_RIGHT] else 0
-
-        if keys[pygame.K_SPACE] and self.player.on_ground:
-            self.player.movement.y = -self.player.jump_power
-            self.player.on_ground = False
-
+        self.player.movement_update()
         self.collision_manager.update()
 
     def draw(self):
         self.screen.fill(self.background_color)
         self.all_sprites.draw(self.screen)
+        self.player.draw_colliders_debug(self.screen)  # debug visualização
