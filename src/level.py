@@ -24,7 +24,7 @@ class Level:
         self.tile_size = level_data.get("tile_size", 32)
 
         spawn_x, spawn_y = level_data.get("player_spawn", [100, 300])
-        self.player = Player(position=(spawn_x, spawn_y), size=(50, 50), speed=5, jump_power=15)
+        self.player = Player(position=(spawn_x, spawn_y), size=(50, 50))
         self.all_sprites.add(self.player)
 
         self.collision_manager = CollisionManager(self.player, self.platforms, self.screen.get_width())
@@ -90,11 +90,13 @@ class Level:
                 self.all_sprites.add(platform)
                 self.platforms.add(platform)
 
-    def update(self):
-        self.player.movement_update()
+    def update(self, delta_time):
+        self.player.movement_update(delta_time)
         self.collision_manager.update()
 
-    def draw(self):
+    def draw(self): 
         self.screen.fill(self.background_color)
         self.all_sprites.draw(self.screen)
         self.player.draw_colliders_debug(self.screen)  # debug visualização
+        for platform in self.platforms:
+            platform.draw_colliders_debug(self.screen)

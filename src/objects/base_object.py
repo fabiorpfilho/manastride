@@ -16,8 +16,8 @@ class Object(pygame.sprite.Sprite):
             topleft=(self.position.x, self.position.y))
         
         
-    def add_collider(self, offset_x, offset_y, width, height, type, solid):
-        collider = Collider(self, offset_x, offset_y, width, height, type)
+    def add_collider(self, offset, size, type, solid):
+        collider = Collider(self, offset, size, type, solid)
         self.colliders.append(collider)
 
     def draw_colliders_debug(self, surface):

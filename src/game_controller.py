@@ -16,16 +16,26 @@ class GameController:
         self.level = Level(self.screen, "level_1")
         self.clock = pygame.time.Clock()
         self.running = True
+        self.last_time = pygame.time.get_ticks()
 
     def run(self):
         while self.running:
-            self.clock.tick(60)
+            current_time = pygame.time.get_ticks()
+            delta_time = (current_time - self.last_time)   
+            
+            self.last_time = current_time
+            
+            # Limita a 100ms para evitar bugs em lag
+            # delta_time = min(delta_time, 0.1)
+            
+            pygame.display.set_caption(f"{self.clock.get_fps():.1f} FPS")
+
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
 
-            self.level.update()
+            self.level.update(delta_time)
             self.level.draw()
             pygame.display.flip()
 

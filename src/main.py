@@ -10,3 +10,4 @@ from game_controller import GameController
 if __name__ == "__main__":
     game = GameController()
     game.run()
+#Colocar tipo nos prototipos das funções, em python é possivel forçar isso

@@ -3,27 +3,34 @@
 # uma lista de colliders, ex: O mario possui o collider geral do corpo topo, que serve para registrar hits, impedir
 # que ele passe por paredes e vãos menores que ele, da mesma forma ele tem um collider na cabeça para registrar
 import pygame
+from pygame.math import Vector2
 
 class Collider:
-    def __init__(self, owner, offset_x, offset_y, width, height, type='default', solid=True, damage=0, invincible=False):
+    def __init__(self, owner, offset, size, type='body', solid=True):
         self.owner = owner  # Objeto que possui esse collider
-        self.offset_x = offset_x  # Distância em X relativa ao owner
-        self.offset_y = offset_y  # Distância em Y relativa ao owner
+        self.offset = Vector2(offset)
+        self.size = Vector2(size)
         self.rect = pygame.Rect(
-            owner.rect.x + offset_x,
-            owner.rect.y + offset_y,
-            width,
-            height
+            owner.rect.x + self.offset.x,
+            owner.rect.y + self.offset.y,
+            self.size.x,
+            self.size.y
         )
         self.type = type  # Tipo do collider (ex: hitbox, trigger, damage)
         self.solid = solid  # Define se impede passagem
 
     def update_position(self):
-        self.rect.x = self.owner.rect.x + self.offset_x
-        self.rect.y = self.owner.rect.y + self.offset_y
+        self.rect.x = self.owner.rect.x + self.offset.x
+        self.rect.y = self.owner.rect.y + self.offset.y
 
     def collides_with(self, other):
-        return self.rect.colliderect(other.rect)
+        rect = pygame.Rect(
+            self.owner.rect.x + self.offset.x,
+            self.owner.rect.y + self.offset.y,
+            self.size.x,
+            self.size.y
+        )
+        return rect.colliderect(other.rect)
     
     def draw_debug(self, surface):
         color = (255, 0, 0) if self.solid else (0, 0, 255)

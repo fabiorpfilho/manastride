@@ -6,4 +6,4 @@ from collider import Collider
 class Terrain(EntityWithSprite):
     def __init__(self, position, size, sprite=(100, 100, 100)):
         super().__init__(position, size, sprite)
-        self.add_collider(0, 0, self.size.x, self.size.y, type='terrain', solid=True)
+        self.add_collider((0, 0), (self.size.x, self.size.y), type='terrain', solid=True)
