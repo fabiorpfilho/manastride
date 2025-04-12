@@ -1,8 +1,10 @@
 import pygame
+import time
 from level import Level
 
 # Pegar o timestamp de quando começar a processar o frame, e depois quando ele terminra, o fator do tempo decorrido se chama
-# delta t, quando for atualizar a posição de um objeto, multiplique a velocidade por esse valor e só depois faça a soma à posição
+# delta t, quando for atualizar a posição 
+# de um objeto, multiplique a velocidade por esse valor e só depois faça a soma à posição
 # para poder fazer a movimentação
 
 class GameController:
@@ -16,17 +18,14 @@ class GameController:
         self.level = Level(self.screen, "level_1")
         self.clock = pygame.time.Clock()
         self.running = True
-        self.last_time = pygame.time.get_ticks()
+        self.last_time = time.perf_counter()
 
     def run(self):
         while self.running:
-            current_time = pygame.time.get_ticks()
+            current_time = time.perf_counter()
             delta_time = (current_time - self.last_time)   
-            
             self.last_time = current_time
-            
-            # Limita a 100ms para evitar bugs em lag
-            # delta_time = min(delta_time, 0.1)
+        
             
             pygame.display.set_caption(f"{self.clock.get_fps():.1f} FPS")
 
