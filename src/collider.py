@@ -16,7 +16,7 @@ class Collider:
             self.size.x,
             self.size.y
         )
-        self.type = type  # Tipo do collider (ex: hitbox, trigger, damage)
+        self.type = type  # Tipo do collider (ex: hitbox, ataque, damage)
         self.solid = solid  # Define se impede passagem
 
     def update_position(self):
@@ -32,6 +32,6 @@ class Collider:
         )
         return rect.colliderect(other.rect)
     
-    def draw_debug(self, surface):
+    def draw_debug(self, surface, rect):
         color = (255, 0, 0) if self.solid else (0, 0, 255)
-        pygame.draw.rect(surface, color, self.rect, 1)
+        pygame.draw.rect(surface, color, rect, 1)

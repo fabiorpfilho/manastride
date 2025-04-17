@@ -1,16 +1,16 @@
 
 from objects.dynamic_objects.character import Character
-from config import SPEED, JUMP_POWER, GRAVITY
+from config import SPEED, JUMP_SPEED, GRAVITY
 import pygame
 
 
 class Player(Character):
     def __init__(self, position, size, sprite=(0, 255, 0), 
                  collide_damage=5, invincible=False, health=100, attackable=True, 
-                 attack_speed=0, damage=10, speed=0, gravity=0, movement=(0, 0), jump_power=0):
+                 attack_speed=0, damage=10, speed=0, gravity=0, movement=(0, 0), jump_speed=0):
         
         super().__init__(position, size, sprite, collide_damage, invincible, health,
-                         attackable, attack_speed, damage, speed, gravity, movement, jump_power)
+                         attackable, attack_speed, damage, speed, gravity, movement, jump_speed)
         
         self.add_collider((0, 0), self.size, type='body', solid=True)
         
@@ -23,13 +23,14 @@ class Player(Character):
             self.position.x += (self.speed + SPEED) * delta_time
         
         if keys[pygame.K_SPACE] and self.on_ground:
-            self.movement.y += -(self.jump_power + JUMP_POWER) 
+            self.movement.y += -(self.jump_speed + JUMP_SPEED) 
             self.on_ground = False
-            print(f"[PULO] delta_time={delta_time:.4f} | força={(self.jump_power + JUMP_POWER):.2f} | movimento_y={self.movement.y:.2f}")
         
-        self.movement.y += (self.gravity + GRAVITY) * delta_time
-        self.position.y += self.movement.y
-
+        g = self.gravity + GRAVITY
+        
+        self.position.y += self.movement.y * delta_time + ( (g * (delta_time ** 2)) / 2)
+        self.movement.y += g * delta_time
         for collider in self.colliders:
             collider.update_position()
-    
+        #MUDAR O MOVEMENT PARA speed_vector
+

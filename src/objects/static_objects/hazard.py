@@ -5,11 +5,11 @@ from objects.entity_with_animation import EntityWithAnimation
 
 
 class Hazard(EntityWithAnimation):
-    def __init__(self, position, size, sprite=(255, 255, 255), solid=True, collide_damage=5, invincible=False,  health=10, attackable=False, attack_speed=0,  damage=10):
+    # def __init__(self, position, size, sprite=(255, 255, 255), solid=True, collide_damage=5, invincible=False,  health=10, attackable=False, attack_speed=0,  damage=10):
         
-        super().__init__(position, size, sprite=sprite, solid=solid,
-                         collide_damage=collide_damage, invincible=invincible, health=health, attackable=attackable)
-        self.damage = damage
-        self.attack_speed = attack_speed
+    #     super().__init__(position, size, sprite=sprite, solid=solid,
+    #                      collide_damage=collide_damage, invincible=invincible, health=health, attackable=attackable)
+    #     self.damage = damage
+    #     self.attack_speed = attack_speed
 
         

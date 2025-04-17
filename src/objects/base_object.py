@@ -20,6 +20,10 @@ class Object(pygame.sprite.Sprite):
         collider = Collider(self, offset, size, type, solid)
         self.colliders.append(collider)
 
-    def draw_colliders_debug(self, surface):
+
+    def draw_colliders_debug(self, surface, offset=Vector2(0, 0)):
+        # Aplica o deslocamento da câmera nos colliders
         for collider in self.colliders:
-            collider.draw_debug(surface)
+            collider_rect = collider.rect.move(-int(offset.x), -int(offset.y))
+            # Supondo que o método draw_debug aceite um rect
+            collider.draw_debug(surface, collider_rect)

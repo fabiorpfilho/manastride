@@ -4,6 +4,7 @@ import json
 from objects.static_objects.terrain import Terrain
 from objects.dynamic_objects.player import Player
 from collision_manager import CollisionManager
+from camera import Camera
 
 class Level:
     def __init__(self, screen, level_name):
@@ -27,12 +28,21 @@ class Level:
         self.player = Player(position=(spawn_x, spawn_y), size=(50, 50))
         self.all_sprites.add(self.player)
 
-        self.collision_manager = CollisionManager(self.player, self.platforms, self.screen.get_width())
 
         if "tilemap" in level_data:
-            self._process_tilemap(level_data["tilemap"])
+            tilemap = level_data["tilemap"]
+
+            world_width = max(len(row)
+                              for row in tilemap["data"]) * self.tile_size
+            world_height = len(tilemap["data"]) * self.tile_size
+            self.camera = Camera(screen.get_size(), world_width, world_height)
+     
+            self._process_tilemap(tilemap)
         elif "tiles" in level_data:
             self._process_legacy_tiles(level_data["tiles"])
+            
+        self.collision_manager = CollisionManager(
+            self.player, self.platforms, world_width)
 
     def _process_tilemap(self, tilemap):
         legend = tilemap["legend"]
@@ -40,11 +50,9 @@ class Level:
 
         for row_idx, row in enumerate(tilemap["data"]):
             y = row_idx * self.tile_size
-            if y > screen_height:  
-                continue
 
             if row_idx == len(tilemap["data"]) - 1:
-                platform = Terrain(position=(0, y), size=(min(len(row) * self.tile_size, screen_width), self.tile_size))
+                platform = Terrain(position=(0, y), size=(min(len(row) * self.tile_size, self.tile_size)))
                 self.all_sprites.add(platform)
                 self.platforms.add(platform)
                 continue
@@ -57,10 +65,6 @@ class Level:
                     tile_info = legend[char]
                     x = col_idx * self.tile_size
 
-                    if x > screen_width:
-                        col_idx += 1
-                        continue
-
                     if tile_info["type"] == "platform":
                         sequence_length = 1
                         for next_char in row[col_idx+1:]:
@@ -69,13 +73,9 @@ class Level:
                             else:
                                 break
 
-                        max_length = (screen_width - x) // self.tile_size
-                        sequence_length = min(sequence_length, max_length)
-
-                        if sequence_length > 0:
-                            platform = Terrain(position=(x, y), size=(self.tile_size * sequence_length, self.tile_size))
-                            self.all_sprites.add(platform)
-                            self.platforms.add(platform)
+                        platform = Terrain(position=(x, y), size=(self.tile_size * sequence_length, self.tile_size))
+                        self.all_sprites.add(platform)
+                        self.platforms.add(platform)
 
                         col_idx += sequence_length
                         continue
@@ -93,10 +93,20 @@ class Level:
     def update(self, delta_time):
         self.player.movement_update(delta_time)
         self.collision_manager.update()
+        self.camera.update(self.player.rect)    
 
-    def draw(self): 
+
+    def draw(self):
         self.screen.fill(self.background_color)
-        self.all_sprites.draw(self.screen)
-        self.player.draw_colliders_debug(self.screen)  # debug visualização
+
+        # Desenha todos os sprites com o offset da câmera
+        for sprite in self.all_sprites:
+            offset_rect = self.camera.apply(sprite.rect)
+            self.screen.blit(sprite.image, offset_rect)
+
+        # Debug do player com o offset da câmera
+        self.player.draw_colliders_debug(self.screen, self.camera.offset)
+
+        # Debug das plataformas com o offset da câmera
         for platform in self.platforms:
-            platform.draw_colliders_debug(self.screen)
+            platform.draw_colliders_debug(self.screen, self.camera.offset)

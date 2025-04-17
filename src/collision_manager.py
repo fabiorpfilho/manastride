@@ -3,10 +3,10 @@
 import pygame
 
 class CollisionManager:
-    def __init__(self, dynamic_object, static_objects, screen_width):
+    def __init__(self, dynamic_object, static_objects, world_width):
         self.dynamic_object = dynamic_object
         self.static_objects = static_objects
-        self.screen_width = screen_width
+        self.world_width = world_width
 
     def update(self):
         self._handle_horizontal_collisions()
@@ -17,8 +17,8 @@ class CollisionManager:
         if self.dynamic_object.position.x < 0:
             self.dynamic_object.position.x = 0
             self.dynamic_object.movement.x = 0
-        elif self.dynamic_object.position.x + self.dynamic_object.rect.width > self.screen_width:
-            self.dynamic_object.position.x = self.screen_width - self.dynamic_object.rect.width
+        elif self.dynamic_object.position.x + self.dynamic_object.rect.width > self.world_width:
+            self.dynamic_object.position.x = self.world_width - self.dynamic_object.rect.width
             self.dynamic_object.movement.x = 0
 
         # Atualiza a posição do objeto e dos colliders uma vez
@@ -83,3 +83,6 @@ class CollisionManager:
                                 self.dynamic_object.rect.x + dc.offset.x,
                                 self.dynamic_object.rect.y + dc.offset.y
                             )
+                            
+                            
+# Você empurra do lado que mais invadiu, se um objeto estra entrando 10 no y e 5 no x, você empurra ele 10 de volta no y
