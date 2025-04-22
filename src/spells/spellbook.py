@@ -2,13 +2,20 @@ from typing import List
 from spell import Spell
 from spell_system import SpellSystem
 
-class SpellBook(SpellSystem):
+
+class SpellBook:
     def __init__(self):
-        super().__init__()
-        self.equipped_spells: List[Spell] = []  # Feitiços equipados em slots
+        self.spells = []  # Lista de feitiços armazenados
 
-    def bind_spell_to_slot(self, spell: Spell, slot: int):
-        pass  # Associa um feitiço a um slot específico
+    def add_spell(self, spell: Spell):
+        # Adiciona um feitiço à coleção
+        self.spells.append(spell)
 
-    def get_spell_from_slot(self, slot: int) -> Spell:
-        pass  # Retorna o feitiço associado ao slot especificado
+    def get_spell(self, index: int) -> Spell:
+        # Retorna um feitiço pelo índice
+        return self.spells[index]
+
+    def list_spells(self):
+        # Exibe todos os feitiços disponíveis
+        for i, spell in enumerate(self.spells):
+            print(f"{i}: {spell.runes}")

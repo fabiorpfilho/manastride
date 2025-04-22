@@ -8,13 +8,30 @@ class SpellSystem:
         self.spellbook: List[Spell] = []     # Feitiços conhecidos ou salvos
 
     def cast_spell(self, spell: Spell):
-        pass  # Realiza a execução de um feitiço selecionado
+        # Realiza a execução de um feitiço selecionado
+        if spell.validate():
+            print(f"Lançando feitiço: {spell.name}")
+            spell.execute()
+        else:
+            print(f"Feitiço inválido: {spell.name}")
 
     def combine_runes(self, runes: List[Rune]) -> Spell:
-        pass  # Junta várias runas para formar um novo feitiço
+        # Junta várias runas para formar um novo feitiço
+        name = "Feitiço Combinado"
+        mana_cost = sum(rune.cost for rune in self.runes)
+        spell = Spell(name, runes, mana_cost)
+        if spell.validate():
+            self.spellbook.append(spell)
+            return spell
+        else:
+            print("Falha ao compilar feitiço: combinação inválida.")
+            return None
 
     def add_rune(self, rune: Rune):
-        pass  # Adiciona uma nova runa ao sistema
+        # Adiciona uma nova runa ao sistema
+        self.runes.append(rune)
 
     def remove_rune(self, rune: Rune):
-        pass  # Remove uma runa do sistema
+        # Remove uma runa do sistema
+        if rune in self.runes:
+            self.runes.remove(rune)
