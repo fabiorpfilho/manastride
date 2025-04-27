@@ -1,5 +1,5 @@
-from rune import Rune
-from spell import Spell
+from spells.rune import Rune
+from spells.spell import Spell
 from typing import List
 
 class SpellSystem:
@@ -7,18 +7,27 @@ class SpellSystem:
         self.runes: List[Rune] = []          # Runas disponíveis no sistema
         self.spellbook: List[Spell] = []     # Feitiços conhecidos ou salvos
 
-    def cast_spell(self, spell: Spell):
-        # Realiza a execução de um feitiço selecionado
-        if spell.validate():
-            print(f"Lançando feitiço: {spell.name}")
-            spell.execute()
+    def cast_spell(self, index: int, direction):
+        """
+        Casts a spell from the spellbook based on the provided numeric index.
+        Index 1 maps to spellbook[0], index 2 to spellbook[1], etc.
+        """
+        spell_index = index - 1  # Convert input index (1-based) to 0-based
+        if 0 <= spell_index < len(self.spellbook):
+            spell = self.spellbook[spell_index]
+            if spell.validate():
+                print(f"Lançando feitiço: {spell.name}")
+                spell.execute(direction)
+            else:
+                print(f"Feitiço inválido: {spell.name}")
         else:
-            print(f"Feitiço inválido: {spell.name}")
+            print(f"Nenhum feitiço no índice {index}")
+
 
     def combine_runes(self, runes: List[Rune]) -> Spell:
         # Junta várias runas para formar um novo feitiço
         name = "Feitiço Combinado"
-        mana_cost = sum(rune.cost for rune in self.runes)
+        mana_cost = sum(rune.cost for rune in runes)
         spell = Spell(name, runes, mana_cost)
         if spell.validate():
             self.spellbook.append(spell)

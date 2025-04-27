@@ -1,6 +1,7 @@
 import pygame
 import time
 from level import Level
+from config import DELTA_TIME
 
 # Pegar o timestamp de quando começar a processar o frame, e depois quando ele terminra, o fator do tempo decorrido se chama
 # delta t, quando for atualizar a posição 
@@ -23,7 +24,7 @@ class GameController:
     def run(self):
         while self.running:
             current_time = time.perf_counter()
-            delta_time = (current_time - self.last_time)   
+            DELTA_TIME = (current_time - self.last_time)   
             self.last_time = current_time
         
             
@@ -34,7 +35,7 @@ class GameController:
                 if event.type == pygame.QUIT:
                     self.running = False
 
-            self.level.update(delta_time)
+            self.level.update(DELTA_TIME)
             self.level.draw()
             pygame.display.flip()
 

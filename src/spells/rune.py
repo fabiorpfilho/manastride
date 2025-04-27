@@ -1,7 +1,7 @@
-from rune_type import RuneType
+from spells.rune_type import RuneType
 
 class Rune:
-    def __init__(self, name: str, rune_type: RuneType, value=None):
+    def __init__(self, name: str, rune_type: RuneType, cost: int, value=None):
         self.name = name            # Nome da runa (ex: "Fireball", "IF", "3x")
         self.rune_type = rune_type  # Tipo da runa, baseado no enum RuneType
         self.value = value          # Valor adicional (ex: número de repetições, condição lógica)
