@@ -16,7 +16,7 @@ class SpellSystem:
         if 0 <= spell_index < len(self.spellbook):
             spell = self.spellbook[spell_index]
             if spell.validate():
-                print(f"Lançando feitiço: {spell.name}")
+                # print(f"Lançando feitiço: {spell.name}")
                 spell.execute(direction)
             else:
                 print(f"Feitiço inválido: {spell.name}")

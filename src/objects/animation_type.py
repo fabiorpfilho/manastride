@@ -1,0 +1,15 @@
+from enum import Enum
+
+
+class AnimationType(Enum):
+    WALK_LEFT = "WALK_LEFT"
+    WALK_RIGHT = "WALK_RIGHT"
+    JUMP_LEFT = "JUMP_LEFT"
+    JUMP_RIGHT = "JUMP_RIGHT"
+    FALLING_LEFT = "FALLING_LEFT"
+    FALLING_RIGHT = "FALLING_RIGHT"
+    ATTACK_LEFT = "ATTACK_LEFT"
+    ATTACK_RIGHT = "ATTACK_RIGHT"
+    HURT_LEFT = "HURT_LEFT"
+    HURT_RIGHT = "HURT_RIGHT"
+    

@@ -1,6 +1,6 @@
 #Classe que será herdado para todos que tiverem animação
 from objects.base_object import Object
-
+import pygame
 
 class EntityWithAnimation(Object):
     def __init__(self, position, size, sprite=(255, 255, 255)):

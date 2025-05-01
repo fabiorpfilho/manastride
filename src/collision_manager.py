@@ -22,13 +22,23 @@ class CollisionManager:
             obj.marked_for_removal = True
 
     def _handle_horizontal_collisions(self, dynamic_object, objects_to_remove):
+        
+        if dynamic_object.position.x + dynamic_object.rect.width < 0 or dynamic_object.position.x > self.world_width:
+        # Se for um feitiço, remove
+            if any(collider.type == "spell" for collider in dynamic_object.colliders):
+                objects_to_remove.append(dynamic_object)
+                return  # Não precisa continuar processando esse objeto
+
         # Limita o objeto dentro da tela
         if dynamic_object.position.x < 0:
             dynamic_object.position.x = 0
-            dynamic_object.speed_vector.x = 0
+            if hasattr(dynamic_object, "speed_vector"):
+                dynamic_object.speed_vector.x = 0
         elif dynamic_object.position.x + dynamic_object.rect.width > self.world_width:
             dynamic_object.position.x = self.world_width - dynamic_object.rect.width
-            dynamic_object.speed_vector.x = 0
+            if hasattr(dynamic_object, "speed_vector"):
+                dynamic_object.speed_vector.x = 0
+                
 
         # Atualiza a posição do objeto e dos colliders uma vez
         dynamic_object.rect.topleft = dynamic_object.position
@@ -37,7 +47,7 @@ class CollisionManager:
                 dynamic_object.rect.x + dynamic_collider.offset.x,
                 dynamic_object.rect.y + dynamic_collider.offset.y
             )
-
+            
         # Verifica colisões
         for dynamic_collider in dynamic_object.colliders:
             for static in self.static_objects:

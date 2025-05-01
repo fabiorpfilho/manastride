@@ -4,10 +4,9 @@ import pygame
 from pygame.math import Vector2
 from collider import Collider
 
-class Object(pygame.sprite.Sprite):
+class Object:
 
     def __init__(self, position, size):
-        super().__init__()
         self.position = Vector2(position)
         self.size = Vector2(size)
         self.colliders = []
@@ -27,3 +26,4 @@ class Object(pygame.sprite.Sprite):
             collider_rect = collider.rect.move(-int(offset.x), -int(offset.y))
             # Supondo que o método draw_debug aceite um rect
             collider.draw_debug(surface, collider_rect)
+

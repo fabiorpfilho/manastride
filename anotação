@@ -1,0 +1,15 @@
+
+
+Great Rune: 
+
+    COMMAND = "COMMAND"      # Representa ações diretas, como lançar projéteis
+    CONDITION = "CONDITION"  # Representa condições (ex: se inimigo está próximo)
+    LOOP = "LOOP"            # Representa repetições (ex: repetir feitiço)
+    OPERATOR = "OPERATOR"    # Representa operadores lógicos ou matemáticos
+
+
+Minor Rune:
+
+Seriam runas que alteram pequenas ações no feitio, mas sem alterar o comportamente principal do feitiço
+Por exemplo: A grande runa COMMAND em um feitiço de projetil so cria uma superversão dela, mas uma runa menor faz ela 
+deixar um rastro de fogo no caminho, ou ao explodir gerar um pilar de fogo no lugar da explosão que causa dano

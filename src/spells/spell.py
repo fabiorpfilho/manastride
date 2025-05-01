@@ -96,7 +96,6 @@ class Spell(EntityWithAnimation):
     def update_projectiles(self, delta_time, player_pos):
         MAX_DISTANCE = 500
         current_time = pygame.time.get_ticks()
-
         # Spawn projéteis pendentes
         for pending in self.pending_projectiles[:]:
             if current_time >= pending["spawn_time"]:
@@ -122,7 +121,6 @@ class Spell(EntityWithAnimation):
         # Atualizar projéteis ativos
         for proj in self.projectiles[:]:
             if proj.marked_for_removal:
-                print(f"Chegou aqui")
                 self.projectiles.remove(proj)
                 continue  # Pula pra próximo projétil se marcado para remoção
             
@@ -131,6 +129,7 @@ class Spell(EntityWithAnimation):
             if distance_traveled > MAX_DISTANCE:
                 self.projectiles.remove(proj)
 
-    def draw_projectiles(self, surface):
+    def draw_projectiles(self, surface, camera):
         for proj in self.projectiles:
-            pygame.draw.circle(surface, (255, 0, 0), (proj.position.x, proj.position.y), 5)  
+            screen_pos = camera.apply(pygame.Rect(proj.position.x, proj.position.y, 0, 0)).center
+            pygame.draw.circle(surface, (255, 0, 0), screen_pos, 5)

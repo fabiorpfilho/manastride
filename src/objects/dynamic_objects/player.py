@@ -17,7 +17,7 @@ class Player(Character):
         self.spell_cooldown_timer = 0
         self.facing_right = True
         
-    def speed_vector_update(self, delta_time):
+    def movement_update(self, delta_time):
         keys = pygame.key.get_pressed()
         
         if self.spell_cooldown_timer > 0:
@@ -58,5 +58,6 @@ class Player(Character):
         self.speed_vector.y += g * delta_time
         for collider in self.colliders:
             collider.update_position()
+            
         #MUDAR O speed_vector PARA speed_vector
 

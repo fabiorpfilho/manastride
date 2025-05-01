@@ -14,8 +14,8 @@ from spells.spell_effect_type import SpellEffectType
 class Level:
     def __init__(self, screen, level_name):
         self.screen = screen
-        self.all_sprites = pygame.sprite.Group()
-        self.platforms = pygame.sprite.Group()
+        self.all_sprites = []
+        self.platforms = []
         self.background_color = [0, 0, 0]
         self.tile_size = 32 
         
@@ -34,7 +34,7 @@ class Level:
 
         spawn_x, spawn_y = level_data.get("player_spawn", [100, 300])
         self.player = Player(position=(spawn_x, spawn_y), size=(50, 50))
-        self.all_sprites.add(self.player)
+        self.all_sprites.append(self.player)
         self.player.spell_system = self.spell_system 
 
 
@@ -56,27 +56,31 @@ class Level:
         
     def _setup_spells(self):
         fireball_rune = Rune(name="Fireball", rune_type=RuneType.COMMAND, value=None, cost=2)
-        dano_rune = Rune(name="Dano", rune_type=RuneType.MODIFIER, value={"damage": 5}, cost=1)
+        dano_rune1 = Rune(name="Dano1", rune_type=RuneType.MODIFIER, value={"damage": 5}, cost=1)
+        dano_rune2 = Rune(name="Dano2", rune_type=RuneType.MODIFIER, value={
+                         "damage":15}, cost=1)
         loop_rune = Rune(name="Loop", rune_type=RuneType.LOOP, value={"iterations": 3}, cost=3)
 
         self.spell_system.add_rune(fireball_rune)
-        self.spell_system.add_rune(dano_rune)
+        self.spell_system.add_rune(dano_rune1)
+        self.spell_system.add_rune(dano_rune2)
         self.spell_system.add_rune(loop_rune)
 
         fireball_spell = Spell(
-            name="Fireball",
-            runes=[fireball_rune, dano_rune],
+            name="Bola de fogo",
+            runes=[fireball_rune, dano_rune2],
             effect_type=SpellEffectType.PROJECTILE
         )
 
-        tempestade_spell = Spell(
-            name="Tempestade de Raios",
-            runes=[loop_rune, fireball_rune, dano_rune],
+        saraivada_spell = Spell(
+            name="Saraivada de Fogo",
+            runes=[loop_rune, fireball_rune, dano_rune1],
             effect_type=SpellEffectType.PROJECTILE
         )
 
         self.spell_system.spellbook.append(fireball_spell)  # Index 0 (key '1')
-        self.spell_system.spellbook.append(tempestade_spell)  # Index 1 (key '2')
+        self.spell_system.spellbook.append(
+            saraivada_spell)  # Index 1 (key '2')
 
     def _process_tilemap(self, tilemap):
         legend = tilemap["legend"]
@@ -87,8 +91,8 @@ class Level:
 
             if row_idx == len(tilemap["data"]) - 1:
                 platform = Terrain(position=(0, y), size=(min(len(row) * self.tile_size, self.tile_size)))
-                self.all_sprites.add(platform)
-                self.platforms.add(platform)
+                self.all_sprites.append(platform)
+                self.platforms.append(platform)
                 continue
 
             col_idx = 0
@@ -108,8 +112,8 @@ class Level:
                                 break
 
                         platform = Terrain(position=(x, y), size=(self.tile_size * sequence_length, self.tile_size))
-                        self.all_sprites.add(platform)
-                        self.platforms.add(platform)
+                        self.all_sprites.append(platform)
+                        self.platforms.append(platform)
 
                         col_idx += sequence_length
                         continue
@@ -121,19 +125,20 @@ class Level:
             size = item.get("size", [self.tile_size, self.tile_size])
             if item["type"] == "platform":
                 platform = Terrain(position, size)
-                self.all_sprites.add(platform)
-                self.platforms.add(platform)
+                self.all_sprites.append(platform)
+                self.platforms.append(platform)
 
     def update(self, delta_time):
-        self.player.speed_vector_update(delta_time)
+        self.player.movement_update(delta_time)
         self.dynamic_objects = [self.player]
+        player_pos = [self.player.position.x + self.player.size[0] /
+                      2, self.player.position.y + self.player.size[1] / 2]
 
         for spell in self.spell_system.spellbook:
             self.dynamic_objects.extend(spell.projectiles)
         self.collision_manager.update(self.dynamic_objects)
         self.camera.update(self.player.rect)    
-        
-        player_pos = [self.player.position.x + self.player.size[0] / 2, self.player.position.y + self.player.size[1] / 2]
+    
         for spell in self.spell_system.spellbook:
             spell.update_projectiles(delta_time, player_pos)
 
@@ -150,7 +155,7 @@ class Level:
         self.player.draw_colliders_debug(self.screen, self.camera.offset)
         
         for spell in self.spell_system.spellbook:
-            spell.draw_projectiles(self.screen)
+            spell.draw_projectiles(self.screen, self.camera)
 
         # Debug das plataformas com o offset da câmera
         for platform in self.platforms:
