@@ -5,11 +5,8 @@ from objects.static_objects.terrain import Terrain
 from objects.dynamic_objects.player import Player
 from collision_manager import CollisionManager
 from camera import Camera
-from spells.spell_system import SpellSystem
-from spells.rune import Rune
-from spells.rune_type import RuneType
-from spells.spell import Spell
-from spells.spell_effect_type import SpellEffectType
+from spell_system.spell_system import SpellSystem
+from spell_system.spells.projectile import Projectile
 
 class Level:
     def __init__(self, screen, level_name):
@@ -55,32 +52,20 @@ class Level:
             self.dynamic_objects, self.platforms, world_width)
         
     def _setup_spells(self):
-        fireball_rune = Rune(name="Fireball", rune_type=RuneType.COMMAND, value=None, cost=2)
-        dano_rune1 = Rune(name="Dano1", rune_type=RuneType.MODIFIER, value={"damage": 5}, cost=1)
-        dano_rune2 = Rune(name="Dano2", rune_type=RuneType.MODIFIER, value={
-                         "damage":15}, cost=1)
-        loop_rune = Rune(name="Loop", rune_type=RuneType.LOOP, value={"iterations": 3}, cost=3)
 
-        self.spell_system.add_rune(fireball_rune)
-        self.spell_system.add_rune(dano_rune1)
-        self.spell_system.add_rune(dano_rune2)
-        self.spell_system.add_rune(loop_rune)
-
-        fireball_spell = Spell(
-            name="Bola de fogo",
-            runes=[fireball_rune, dano_rune2],
-            effect_type=SpellEffectType.PROJECTILE
+        ice_spell = Projectile(
+            major_rune=self.spell_system.runes[2],
+            minor_runes=[self.spell_system.runes[3]]
         )
 
-        saraivada_spell = Spell(
-            name="Saraivada de Fogo",
-            runes=[loop_rune, fireball_rune, dano_rune1],
-            effect_type=SpellEffectType.PROJECTILE
+        fan_spell = Projectile(
+            major_rune=self.spell_system.runes[0],
+            minor_runes=[self.spell_system.runes[4]]
         )
 
-        self.spell_system.spellbook.append(fireball_spell)  # Index 0 (key '1')
+        self.spell_system.spellbook.append(ice_spell)  # Index 0 (key '1')
         self.spell_system.spellbook.append(
-            saraivada_spell)  # Index 1 (key '2')
+            fan_spell)  # Index 1 (key '2')
 
     def _process_tilemap(self, tilemap):
         legend = tilemap["legend"]
@@ -140,7 +125,7 @@ class Level:
         self.camera.update(self.player.rect)    
     
         for spell in self.spell_system.spellbook:
-            spell.update_projectiles(delta_time, player_pos)
+            spell.update(delta_time, player_pos)
 
 
     def draw(self):
@@ -155,7 +140,7 @@ class Level:
         self.player.draw_colliders_debug(self.screen, self.camera.offset)
         
         for spell in self.spell_system.spellbook:
-            spell.draw_projectiles(self.screen, self.camera)
+            spell.draw(self.screen, self.camera)
 
         # Debug das plataformas com o offset da câmera
         for platform in self.platforms:

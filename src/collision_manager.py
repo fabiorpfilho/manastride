@@ -24,8 +24,8 @@ class CollisionManager:
     def _handle_horizontal_collisions(self, dynamic_object, objects_to_remove):
         
         if dynamic_object.position.x + dynamic_object.rect.width < 0 or dynamic_object.position.x > self.world_width:
-        # Se for um feitiço, remove
-            if any(collider.type == "spell" for collider in dynamic_object.colliders):
+        # Se for um projétil, remove
+            if any(collider.type == "projectile" for collider in dynamic_object.colliders):
                 objects_to_remove.append(dynamic_object)
                 return  # Não precisa continuar processando esse objeto
 
@@ -54,7 +54,7 @@ class CollisionManager:
                 for static_collider in static.colliders:
                     if dynamic_collider.rect.colliderect(static_collider.rect):
                         
-                        if dynamic_collider.type == "spell":
+                        if dynamic_collider.type == "projectile":
                             objects_to_remove.append(dynamic_object)
                             return  # Nem precisa continuar checando, já vai remover
                         
@@ -90,7 +90,7 @@ class CollisionManager:
                 for static_collider in static.colliders:
                     if dynamic_collider.rect.colliderect(static_collider.rect):
                         
-                        if dynamic_collider.type == "spell":
+                        if dynamic_collider.type == "projectile":
                             objects_to_remove.append(dynamic_object)
                             return
                         
