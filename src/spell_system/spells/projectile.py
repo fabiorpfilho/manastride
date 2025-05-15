@@ -3,6 +3,7 @@ from spell_system.rune import Rune
 from typing import List, Optional
 import pygame 
 from config import SPEED
+import math
 
 class Projectile(Spell):
     def __init__(self, major_rune: Optional[Rune] = None, minor_runes: List[Rune] = None):
@@ -36,10 +37,11 @@ class Projectile(Spell):
             if self.major_rune.name == "Fan":
                 # Leque de 5 projéteis
                 # 40° de espalhamento
-                angles = [direction + (i * 0.1) - 0.2 for i in range(5)]
+                base_angle = 0.5 if direction == 1 else  math.pi - 0.5
+                angles = [base_angle + (i * 0.1) - 0.2 for i in range(5)]
+                print(f"Angulos {angles}!")
                 for i, angle in enumerate(angles):
                     projectile = {
-                        "spawn_time": pygame.time.get_ticks() + (i * 200),  # Atraso de 200ms por projétil
                         "direction": angle,
                         "speed": self.attributes["speed"],
                         "damage": self.attributes["damage"] * 0.6,
@@ -95,49 +97,67 @@ class Projectile(Spell):
     def update(self, delta_time: float, player_pos: tuple):
         MAX_DISTANCE = 500
         current_time = pygame.time.get_ticks()
+        
+        def spawn_projectile_from_pending(pending):
+            projectile = Projectile(
+                major_rune=self.major_rune,
+                minor_runes=self.minor_runes
+            )
+            projectile.position.x = player_pos[0]
+            projectile.position.y = player_pos[1]
+            projectile.size.update(10, 10)
+            projectile.add_collider(
+                (0, 0), (10, 10), type='projectile', solid=True)
+
+            projectile.speed = pending["speed"]
+            projectile.damage = pending["damage"]
+            projectile.start_x = player_pos[0]
+            projectile.start_y = player_pos[1]
+            projectile.direction = pending["direction"]
+            projectile.major_rune_name = pending["major_rune"]
+            projectile.minor_rune_names = pending["minor_runes"]
+            projectile.effects = pending["effects"]
+            if "homing" in pending:
+                projectile.homing = pending["homing"]
+
+            self.projectiles.append(projectile)
+            self.pending_projectiles.remove(pending)
 
         # Spawn projéteis pendentes
         for pending in self.pending_projectiles[:]:
-            if current_time >= pending["spawn_time"]:
-                # Cria um novo projétil como instância de Projectile
-                projectile = Projectile(
-                    major_rune=self.major_rune,
-                    minor_runes=self.minor_runes
-                )
-                projectile.position.x = player_pos[0]
-                projectile.position.y = player_pos[1]
-                projectile.size.update(10, 10)
-                projectile.add_collider(
-                    (0, 0), (10, 10), type='projectile', solid=True)
-
-                # Atributos extras para movimento e visual
-                projectile.speed = pending["speed"]
-                projectile.damage = pending["damage"]
-                projectile.start_x = player_pos[0]
-                projectile.direction = pending["direction"]
-                projectile.major_rune_name = pending["major_rune"]
-                projectile.minor_rune_names = pending["minor_runes"]
-                projectile.effects = pending["effects"]
-                if "homing" in pending:
-                    projectile.homing = pending["homing"]
-
-                self.projectiles.append(projectile)
-                self.pending_projectiles.remove(pending)
-
+            if pending.get("spawn_time") is not None:
+                if current_time >= pending["spawn_time"]:
+                    spawn_projectile_from_pending(pending)
+            else:
+                spawn_projectile_from_pending(pending)
+            
+            
         # Atualizar projéteis ativos
         for proj in self.projectiles[:]:
             if proj.marked_for_removal:
                 self.projectiles.remove(proj)
                 continue
             
-            proj.position.x += proj.direction * (proj.speed + SPEED) * delta_time
-            distance_traveled = abs(proj.position.x - proj.start_x)
+            if proj.major_rune_name == "Fan":
+                dx = math.cos(proj.direction)
+                dy = -math.sin(proj.direction)
+                proj.position.x += dx * (proj.speed + SPEED) * delta_time
+                proj.position.y += dy * (proj.speed + SPEED) * delta_time
+                distance_traveled = math.hypot(
+                    proj.position.x - proj.start_x, proj.position.y - proj.start_y)
+            else:
+
+                # Movimento linear original para outros tipos
+                proj.position.x += proj.direction * (proj.speed + SPEED) * delta_time
+                distance_traveled = abs(proj.position.x - proj.start_x)
+            
+            
             if distance_traveled > MAX_DISTANCE:
                 proj.marked_for_removal = True
-            if "slow" in proj.effects:
-                print(f"🧊 Inimigo atingido por {proj.name} desacelerado!")
-            if "burn" in proj.effects:
-                print(f"🔥 In System: imigo atingido por {proj.name} queimando!")
+            # if "slow" in proj.effects:
+            #     print(f"🧊 Inimigo atingido por {proj.name} desacelerado!")
+            # if "burn" in proj.effects:
+            #     print(f"🔥 In System: imigo atingido por {proj.name} queimando!")
 
     def draw(self, surface, camera):
         for proj in self.projectiles:

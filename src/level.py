@@ -118,6 +118,8 @@ class Level:
         self.dynamic_objects = [self.player]
         player_pos = [self.player.position.x + self.player.size[0] /
                       2, self.player.position.y + self.player.size[1] / 2]
+        
+        # print(f"Player posição y {player_pos[1]}!")
 
         for spell in self.spell_system.spellbook:
             self.dynamic_objects.extend(spell.projectiles)
