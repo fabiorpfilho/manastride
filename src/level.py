@@ -1,6 +1,8 @@
 # level.py
 import pygame
 import json
+import xml.etree.ElementTree as ET
+import os
 from objects.static_objects.terrain import Terrain
 from objects.dynamic_objects.player import Player
 from collision_manager import CollisionManager
@@ -14,42 +16,73 @@ class Level:
         self.all_sprites = []
         self.platforms = []
         self.background_color = [0, 0, 0]
-        self.tile_size = 32 
+        self.tile_size = 24 
         
         self.spell_system = SpellSystem()
         self._setup_spells()
 
+        
         try:
-            with open(f"src/levels/{level_name}.json", "r") as file:
-                level_data = json.load(file)
+            tree = ET.parse(f"src/levels/{level_name}.xml")
+            self.map_data = tree.getroot()
         except FileNotFoundError:
-            print(f"Erro: O arquivo {level_name}.json não foi encontrado!")
+            print(f"Erro: O arquivo {level_name}.xml não foi encontrado!")
             return
+        
+        # Configurações do mapa
+        self.tile_width = int(self.map_data.get("tilewidth"))
+        self.tile_height = int(self.map_data.get("tileheight"))
+        self.map_width = int(self.map_data.get("width"))
+        self.map_height = int(self.map_data.get("height"))
 
-        self.background_color = level_data.get("background_color", [0, 0, 0])
-        self.tile_size = level_data.get("tile_size", 32)
+        
+        # Configurar a câmera
+        world_width = self.map_width * self.tile_width
+        world_height = self.map_height * self.tile_height
+        self.camera = Camera(screen.get_size(), world_width, world_height)
+        
+        # Carregar o tileset
+        self.tileset = self._load_tileset() 
 
-        spawn_x, spawn_y = level_data.get("player_spawn", [100, 300])
+        spawn_x, spawn_y = 100, 300  # Ajuste conforme necessário
         self.player = Player(position=(spawn_x, spawn_y), size=(50, 50))
         self.all_sprites.append(self.player)
         self.player.spell_system = self.spell_system 
-
-
-        if "tilemap" in level_data:
-            tilemap = level_data["tilemap"]
-
-            world_width = max(len(row)
-                              for row in tilemap["data"]) * self.tile_size
-            world_height = len(tilemap["data"]) * self.tile_size
-            self.camera = Camera(screen.get_size(), world_width, world_height)
-     
-            self._process_tilemap(tilemap)
-        elif "tiles" in level_data:
-            self._process_legacy_tiles(level_data["tiles"])
+        
+        # Processar a camada de blocos
+        self._process_tilemap()
             
         self.dynamic_objects = [self.player]  
         self.collision_manager = CollisionManager(
             self.dynamic_objects, self.platforms, world_width)
+
+
+    def _load_tileset(self):
+        """Carrega a imagem do tileset e divide em tiles individuais."""
+        tileset = self.map_data.find("tileset")
+        image_path = tileset.find("image").get("source")
+        tile_width = int(tileset.get("tilewidth"))
+        tile_height = int(tileset.get("tileheight"))
+        columns = int(tileset.get("columns"))
+        tilecount = int(tileset.get("tilecount"))
+
+        # Carregar a imagem do tileset
+        tileset_image = pygame.image.load(os.path.join("src/levels", image_path)).convert_alpha()
+
+        # Dicionário para armazenar os tiles
+        tiles = {}
+        firstgid = int(tileset.get("firstgid"))
+
+        for gid in range(firstgid, firstgid + tilecount):
+                col = (gid - firstgid) % columns
+                row = (gid - firstgid) // columns
+                x = col * tile_width
+                y = row * tile_height
+                tile_rect = pygame.Rect(x, y, tile_width, tile_height)
+                tile_image = tileset_image.subsurface(tile_rect)
+                tiles[gid] = tile_image
+
+        return tiles
         
     def _setup_spells(self):
 
@@ -67,43 +100,38 @@ class Level:
         self.spell_system.spellbook.append(
             fan_spell)  # Index 1 (key '2')
 
-    def _process_tilemap(self, tilemap):
-        legend = tilemap["legend"]
-        screen_width, screen_height = self.screen.get_size()
 
-        for row_idx, row in enumerate(tilemap["data"]):
-            y = row_idx * self.tile_size
+    def _process_tilemap(self):
+        """Processa a camada de blocos do mapa Tiled."""
+        layer = self.map_data.find("layer")
+        data = layer.find("data").text.strip()
 
-            if row_idx == len(tilemap["data"]) - 1:
-                platform = Terrain(position=(0, y), size=(min(len(row) * self.tile_size, self.tile_size)))
-                self.all_sprites.append(platform)
-                self.platforms.append(platform)
-                continue
+        # Dividir os dados em linhas e filtrar linhas vazias
+        rows = [row for row in data.splitlines() if row.strip()]
 
-            col_idx = 0
-            while col_idx < len(row):
-                char = row[col_idx]
+        # Converter os dados CSV em uma matriz 2D
+        tilemap = []
+        for row in rows:
+            # Dividir a linha em elementos e tratar strings vazias
+            tiles = [int(tile) if tile.strip() else 0 for tile in row.split(",")]
+            tilemap.append(tiles)
 
-                if char in legend and legend[char]:
-                    tile_info = legend[char]
-                    x = col_idx * self.tile_size
-
-                    if tile_info["type"] == "platform":
-                        sequence_length = 1
-                        for next_char in row[col_idx+1:]:
-                            if next_char == char:
-                                sequence_length += 1
-                            else:
-                                break
-
-                        platform = Terrain(position=(x, y), size=(self.tile_size * sequence_length, self.tile_size))
+        # Processar a matriz de tiles
+        for row_idx, row in enumerate(tilemap):
+            for col_idx, gid in enumerate(row):
+                if gid != 0:  # Ignorar tiles vazios
+                    x = col_idx * self.tile_width
+                    y = row_idx * self.tile_height
+                    if gid in self.tileset:
+                        # Criar um objeto Terrain para cada tile
+                        platform = Terrain(
+                            position=(x, y),
+                            size=(self.tile_width, self.tile_height),
+                            image=self.tileset[gid]
+                        )
                         self.all_sprites.append(platform)
                         self.platforms.append(platform)
-
-                        col_idx += sequence_length
-                        continue
-                col_idx += 1
-
+                        
     def _process_legacy_tiles(self, tiles):
         for item in tiles:
             position = item["position"]

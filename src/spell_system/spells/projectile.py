@@ -39,7 +39,7 @@ class Projectile(Spell):
                 # 40° de espalhamento
                 base_angle = 0.5 if direction == 1 else  math.pi - 0.5
                 angles = [base_angle + (i * 0.1) - 0.2 for i in range(5)]
-                print(f"Angulos {angles}!")
+                # print(f"Angulos {angles}!")
                 for i, angle in enumerate(angles):
                     projectile = {
                         "direction": angle,
@@ -50,7 +50,7 @@ class Projectile(Spell):
                         "minor_runes": minor_rune_names
                     }
                     self.pending_projectiles.append(projectile)
-                print(f"🌬️ {self.name} dispara leque de projéteis!")
+                # print(f"🌬️ {self.name} dispara leque de projéteis!")
             elif self.major_rune.name == "Multiple":
                 for i in range(3):
                     spawn_time = pygame.time.get_ticks() + (i * 200)
@@ -76,7 +76,7 @@ class Projectile(Spell):
                     "minor_runes": minor_rune_names
                 }
                 self.projectiles.append(projectile)
-                print(f"🎯 {self.name} dispara projétil perseguidor!")
+                # print(f"🎯 {self.name} dispara projétil perseguidor!")
         else:
             # Comportamento padrão
             projectile = {
@@ -88,11 +88,11 @@ class Projectile(Spell):
                 "minor_runes": minor_rune_names
             }
             self.projectiles.append(projectile)
-            print(f"🏹 {self.name} disparado!")
-            if "slow" in effects:
-                print("🧊 Projétil com efeito de gelo!")
-            if "burn" in effects:
-                print("🔥 Projétil com efeito de fogo!")
+            # print(f"🏹 {self.name} disparado!")
+            # if "slow" in effects:
+            #     print("🧊 Projétil com efeito de gelo!")
+            # if "burn" in effects:
+            #     print("🔥 Projétil com efeito de fogo!")
 
     def update(self, delta_time: float, player_pos: tuple):
         MAX_DISTANCE = 500

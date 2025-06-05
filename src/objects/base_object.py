@@ -24,6 +24,6 @@ class Object:
         # Aplica o deslocamento da câmera nos colliders
         for collider in self.colliders:
             collider_rect = collider.rect.move(-int(offset.x), -int(offset.y))
-            # Supondo que o método draw_debug aceite um rect
-            collider.draw_debug(surface, collider_rect)
+            # Comente a linha abaixo para remover a visibilidade do collider
+            # collider.draw_debug(surface, collider_rect)
 
