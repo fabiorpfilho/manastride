@@ -45,7 +45,7 @@ class Level:
         self.tileset = self._load_tileset() 
 
         spawn_x, spawn_y = 100, 300  # Ajuste conforme necessário
-        self.player = Player(position=(spawn_x, spawn_y), size=(50, 50))
+        self.player = Player(position=(spawn_x, spawn_y), size=(32, 32))
         self.all_sprites.append(self.player)
         self.player.spell_system = self.spell_system 
         

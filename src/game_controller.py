@@ -16,7 +16,7 @@ class GameController:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(title)
 
-        self.level = Level(self.screen, "level_1")
+        self.level = Level(self.screen, "level_1.2")
         self.clock = pygame.time.Clock()
         self.running = True
         self.last_time = time.perf_counter()
