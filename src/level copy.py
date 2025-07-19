@@ -9,12 +9,6 @@ from camera import Camera
 from spell_system.spell_system import SpellSystem
 from spell_system.spells.projectile import Projectile
 from pygame.math import Vector2
-from objects.sprite import Sprite
-from objects.animation import Animation
-from objects.animation_type import AnimationType
-from objects.animation_manager import AnimationManager
-
-
 
 class Level:
     def __init__(self, screen, level_name):
@@ -43,19 +37,13 @@ class Level:
         # Configurar a câmera com zoom inicial (exemplo: 2.0 para blocos de 32px parecerem maiores)
         world_width = self.map_width * self.tile_width
         world_height = self.map_height * self.tile_height
-        self.camera = Camera(screen.get_size(), world_width, world_height, zoom=3.0)
+        self.camera = Camera(screen.get_size(), world_width, world_height, zoom=2.0)
         
         # Carregar o tileset
         self.tileset = self._load_tileset() 
-        
-        animation_manager = AnimationManager()
 
         spawn_x, spawn_y = 100, 300  # Ajuste conforme necessário
-        self.player = Player(
-            position=(spawn_x, spawn_y),
-            size=(20, 28),  # Ajuste conforme o tamanho dos sprites
-            animation_manager=animation_manager
-        )
+        self.player = Player(position=(spawn_x, spawn_y), size=(20, 20))
         self.all_sprites.append(self.player)
         self.player.spell_system = self.spell_system 
         
@@ -172,7 +160,7 @@ class Level:
 
         # Debug do player com o offset da câmera
         offset_player_rect = self.camera.apply(self.player.rect)
-        self.player.draw_colliders_debug(self.screen, self.camera)  # Debug já considera o offset aplicado
+        self.player.draw_colliders_debug(self.screen, Vector2(0, 0))  # Debug já considera o offset aplicado
 
         # Desenha os projéteis com zoom
         for spell in self.spell_system.spellbook:

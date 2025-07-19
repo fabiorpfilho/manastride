@@ -6,8 +6,9 @@ import pygame
 
 
 class Spell(EntityWithAnimation):
-    def __init__(self, name: str, base_attributes: Dict, major_rune: Optional[Rune] = None, minor_runes: List[Rune] = None, position= (0, 0), size= (10, 10), sprite= (0, 255, 0)):
-        super().__init__(position=position, size=size, sprite=sprite)
+    def __init__(self, name: str, base_attributes: Dict, major_rune: Optional[Rune] = None, 
+                 minor_runes: List[Rune] = None, position=(0, 0), size=(10, 10), sprite=(0, 255, 0)):
+        super().__init__(position=position, size=size, animation_manager=None, sprite=sprite)
         self.name = name
         self.attributes = base_attributes.copy()
         self.major_rune = major_rune

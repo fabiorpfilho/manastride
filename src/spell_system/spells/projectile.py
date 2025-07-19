@@ -174,10 +174,10 @@ class Projectile(Spell):
             major_rune = getattr(proj, "major_rune_name", "Default")
             if major_rune == "Fan":
                 # Círculo menor para múltiplos projéteis
-                pygame.draw.circle(surface, color, screen_pos, 3)
+                pygame.draw.circle(surface, color, screen_pos, 3 * camera.zoom)
             elif major_rune == "Multiple":
                 # Círculo intermediário para múltiplos disparos
-                pygame.draw.circle(surface, color, screen_pos, 4)
+                pygame.draw.circle(surface, color, screen_pos, 3 * camera.zoom)
             elif major_rune == "Homing":
                 # Triângulo para perseguição
                 points = [
@@ -187,4 +187,4 @@ class Projectile(Spell):
                 ]
                 pygame.draw.polygon(surface, color, points)
             else:  # Default
-                pygame.draw.circle(surface, color, screen_pos, 5)
+                pygame.draw.circle(surface, color, screen_pos, 5 * camera.zoom)

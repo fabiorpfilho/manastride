@@ -1,5 +1,5 @@
+import pygame
 
 class Sprite:
-    def __init__(self, sprite=(255, 255, 255)):
-
-        self.sprite = sprite
+    def __init__(self, image: pygame.Surface):
+        self.image = image

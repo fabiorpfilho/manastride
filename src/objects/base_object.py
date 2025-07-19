@@ -14,16 +14,14 @@ class Object:
         self.rect = self.image.get_rect(
             topleft=(self.position.x, self.position.y))
         
-        
     def add_collider(self, offset, size, type, solid):
         collider = Collider(self, offset, size, type, solid)
         self.colliders.append(collider)
 
-
-    def draw_colliders_debug(self, surface, offset=Vector2(0, 0)):
-        # Aplica o deslocamento da câmera nos colliders
+    def draw_colliders_debug(self, surface, camera):
+        # Aplica o deslocamento e o zoom da câmera nos colliders
         for collider in self.colliders:
-            collider_rect = collider.rect.move(-int(offset.x), -int(offset.y))
-            # Comente a linha abaixo para remover a visibilidade do collider
-            # collider.draw_debug(surface, collider_rect)
-
+            # Usa camera.apply para transformar o retângulo do colisor
+            collider_rect = camera.apply(collider.rect)
+            # Desenha o colisor com o retângulo já escalado
+            collider.draw_debug(surface, collider_rect)
