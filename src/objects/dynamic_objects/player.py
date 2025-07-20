@@ -3,6 +3,7 @@ from config import SPEED, JUMP_SPEED, GRAVITY
 import pygame
 from objects.animation_type import AnimationType
 from typing import Optional
+from objects.animation_manager import AnimationManager
 
 class Player(Character):
     def __init__(self, position, size, animation_manager: Optional['AnimationManager'] = None, 
@@ -17,18 +18,26 @@ class Player(Character):
         self.current_animation = None
         self.current_frame = 0
         self.animation_timer = 0
-        self.animation_speed = 0.1  # Tempo em segundos por frame
+        self.animation_speeds = {
+            AnimationType.IDLE1: 0.35,  # Tempo maior para idle1 (0.2 segundos por frame)
+            AnimationType.WALK: 0.1,
+            AnimationType.JUMP: 0.1,
+            AnimationType.FALLING: 0.1
+        }
         self.facing_right = True
         self.add_collider((0, 0), self.size, type='body', solid=True)
         self.spell_cooldown = 0.5
         self.spell_cooldown_timer = 0
         
-        # Carregar animação de corrida, se animation_manager estiver presente
+        # Carregar animações no AnimationManager
         if self.animation_manager:
+            self.animation_manager.load_sprites_from_folder("assets/idle1", AnimationType.IDLE1)
             self.animation_manager.load_sprites_from_folder("assets/run", AnimationType.WALK)
+            self.animation_manager.load_sprites_from_folder("assets/jump", AnimationType.JUMP)
+            self.animation_manager.load_sprites_from_folder("assets/fall", AnimationType.FALLING)
             if not self.animation_manager.animationList:
-                print("Erro: Nenhuma animação carregada em assets/run_teste")
-            self.set_animation(AnimationType.WALK)
+                print("Erro: Nenhuma animação carregada")
+            self.set_animation(AnimationType.IDLE1)  # Animação inicial padrão
 
     def set_animation(self, animation_type: AnimationType):
         """Define a animação atual com base no tipo."""
@@ -105,18 +114,33 @@ class Player(Character):
         self.update_animation(delta_time)
 
     def update_animation(self, delta_time):
-        """Atualiza o frame da animação com base no movimento e no tempo."""
+        """Atualiza o frame da animação com base no estado do jogador."""
         if not self.animation_manager or not self.current_animation:
             return  # Sem AnimationManager ou animação, mantém a imagem padrão
         
-        if abs(self.speed_vector.x) > 0.1:
-            self.set_animation(AnimationType.WALK)
-            self.animation_timer += delta_time
-            if self.animation_timer >= self.animation_speed:
-                self.animation_timer -= self.animation_speed  # Subtrai o tempo acumulado
-                self.current_frame = (self.current_frame + 1) % len(self.current_animation.animation)
-                print(f"Frame atual: {self.current_frame}, Total de frames: {len(self.current_animation.animation)}")
-                self.update_image()
+        # Determinar o estado do jogador
+        # print(f"Em solo: {self.on_ground}")
+        if not self.on_ground:
+            if self.speed_vector.y < 0:  # Subindo (pulo)
+                self.set_animation(AnimationType.JUMP)
+            else:  # Caindo
+                self.set_animation(AnimationType.FALLING)
         else:
-            self.current_frame = 0
+            if abs(self.speed_vector.x) > 0.1:  # Movendo
+                self.set_animation(AnimationType.WALK)
+            else:  # Parado
+                self.set_animation(AnimationType.IDLE1)
+
+        # Atualizar o frame da animação atual
+        self.animation_timer += delta_time
+        animation_speed = self.animation_speeds.get(self.current_animation.type, 0.1)
+        if self.animation_timer >= animation_speed:
+            self.animation_timer -= animation_speed  # Subtrai o tempo acumulado
+            if self.current_animation.type == AnimationType.JUMP:
+                # Para a animação de jump, parar no último frame
+                self.current_frame = min(self.current_frame + 1, len(self.current_animation.animation) - 1)
+            else:
+                # Para outras animações, fazer loop
+                self.current_frame = (self.current_frame + 1) % len(self.current_animation.animation)
+            print(f"Frame atual: {self.current_frame}, Total de frames: {len(self.current_animation.animation)}")
             self.update_image()

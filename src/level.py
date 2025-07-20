@@ -53,7 +53,7 @@ class Level:
         spawn_x, spawn_y = 100, 300  # Ajuste conforme necessário
         self.player = Player(
             position=(spawn_x, spawn_y),
-            size=(20, 28),  # Ajuste conforme o tamanho dos sprites
+            size=(20, 31),  # Ajuste conforme o tamanho dos sprites
             animation_manager=animation_manager
         )
         self.all_sprites.append(self.player)
@@ -156,7 +156,8 @@ class Level:
         for spell in self.spell_system.spellbook:
             self.dynamic_objects.extend(spell.projectiles)
         self.collision_manager.update(self.dynamic_objects)
-        self.camera.update(self.player.rect)    
+        self.camera.update(self.player.rect)   
+         
     
         for spell in self.spell_system.spellbook:
             spell.update(delta_time, player_pos)

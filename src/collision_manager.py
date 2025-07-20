@@ -1,4 +1,3 @@
-# collision_manager.py
 import pygame
 
 class CollisionManager:
@@ -42,6 +41,9 @@ class CollisionManager:
                 dynamic_object.rect.y + dynamic_collider.offset.y
             )
 
+        # Inicialmente, assumimos que o jogador não está no chão até que uma colisão confirme
+        ground_collision_detected = False
+
         for dynamic_collider in dynamic_object.colliders:
             for static in self.static_objects:
                 for static_collider in static.colliders:
@@ -55,38 +57,26 @@ class CollisionManager:
                         intersection = dynamic_collider.rect.clip(static_collider.rect)
                         largura_invasao = intersection.width
                         altura_invasao = intersection.height
-                        # print(f"Overlap X: {largura_invasao}, Overlap Y: {altura_invasao}")
+
                         # Decide se empurra em X ou Y (o maior)
                         if altura_invasao > largura_invasao:
                             # Corrige em X
                             if dynamic_object.rect.centerx < static_collider.rect.centerx:
-                                # print("Empurrando para a esquerda")
-                                # Vindo da esquerda
-                                dynamic_object.position.x -= largura_invasao + dynamic_collider.offset.x 
+                                dynamic_object.position.x -= largura_invasao + dynamic_collider.offset.x
                             else:
-                                # Vindo da direita
-                                # print("Empurrando para a direita")
-                                # print(f"dynamic_object.position.x: {dynamic_object.position.x}, largura_invasao: {largura_invasao}, offset.x: {dynamic_collider.offset.x}")
-                                # print(f"dynamic_object.position.y antes: {dynamic_object.position.y}")
-                                # print(f"y speed_vector: {dynamic_object.speed_vector.y}")
-                                dynamic_object.position.x += largura_invasao + dynamic_collider.offset.x 
-                                # dynamic_object.position.y += largura_invasao / 2
-
-                                # print(f"dynamic_object.position.x após: {dynamic_object.position.x}")
-                                # print(f"dynamic_object.position.y apos: {dynamic_object.position.y}")
+                                dynamic_object.position.x += largura_invasao + dynamic_collider.offset.x
                             dynamic_object.speed_vector.x = 0
                         else:
                             # Corrige em Y
                             if dynamic_object.rect.centery < static_collider.rect.centery:
-                                # Vindo de cima
-                                # print("Empurrando para cima")
+                                # Vindo de cima (pousando na plataforma)
                                 dynamic_object.position.y -= altura_invasao + dynamic_collider.offset.y
-                                dynamic_object.on_ground = True
+                                dynamic_object.speed_vector.y = 0
+                                ground_collision_detected = True
                             else:
-                                # Vindo de baixo
-                                # print("Empurrando para baixo")
+                                # Vindo de baixo (batendo a cabeça)
                                 dynamic_object.position.y += altura_invasao + dynamic_collider.offset.y
-                            dynamic_object.speed_vector.y = 0
+                                dynamic_object.speed_vector.y = 0
 
                         # Atualiza posições após ajuste
                         dynamic_object.rect.topleft = dynamic_object.position
@@ -96,4 +86,21 @@ class CollisionManager:
                                 dynamic_object.rect.y + dc.offset.y
                             )
 
-# Você empurra do lado que mais invadiu, se um objeto estra entrando 10 no y e 5 no x, você empurra ele 10 de volta no y
+        # Atualiza on_ground apenas se soubermos a situação do jogador
+        if ground_collision_detected:
+            dynamic_object.on_ground = True
+        elif dynamic_object.speed_vector.y > 0:  # Jogador está se movendo para baixo
+            # Verifica se o jogador está fora de uma plataforma
+            on_platform = False
+            for static in self.static_objects:
+                for static_collider in static.colliders:
+                    # Verifica se o pé do jogador está alinhado com o topo da plataforma
+                    if (dynamic_object.rect.bottom >= static_collider.rect.top and
+                        dynamic_object.rect.bottom <= static_collider.rect.top + 5 and  # Pequena margem
+                        dynamic_object.rect.left < static_collider.rect.right and
+                        dynamic_object.rect.right > static_collider.rect.left):
+                        on_platform = True
+                        break
+                if on_platform:
+                    break
+            dynamic_object.on_ground = on_platform
