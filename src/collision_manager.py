@@ -89,7 +89,7 @@ class CollisionManager:
         # Atualiza on_ground apenas se soubermos a situação do jogador
         if ground_collision_detected:
             dynamic_object.on_ground = True
-        elif dynamic_object.speed_vector.y > 0:  # Jogador está se movendo para baixo
+        elif hasattr(dynamic_object, "speed_vector") and dynamic_object.speed_vector.y > 0:  # Jogador está se movendo para baixo
             # Verifica se o jogador está fora de uma plataforma
             on_platform = False
             for static in self.static_objects:

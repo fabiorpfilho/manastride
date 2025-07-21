@@ -11,4 +11,5 @@ class AnimationType(Enum):
     ATTACK2 = "ATTACK2"
     ATTACK3 = "ATTACK3"
     HURT = "HURT"
+    CASTING = "CASTING"
     
