@@ -3,6 +3,7 @@ from objects.sprite import Sprite
 from objects.animation_type import AnimationType
 import os
 import pygame
+import json
 
 class AnimationManager:
     def __init__(self, animationList=None):
@@ -24,3 +25,29 @@ class AnimationManager:
             self.animationList.append(animation)
         except FileNotFoundError:
             print(f"Erro: Pasta {folder_path} não encontrada!")
+
+
+    def load_animations_from_json(self, sheet_path, json_path, animation_type: str):
+        try:
+            sheet = pygame.image.load(sheet_path).convert_alpha()
+            
+            with open(json_path, "r") as f:
+                data = json.load(f)
+
+            if animation_type not in data:
+                print(f"Aviso: Animação '{animation_type}' não encontrada no JSON.")
+                return
+
+            sprites = []
+            for x, y, w, h in data[animation_type]:
+                frame = sheet.subsurface(pygame.Rect(x, y, w, h))
+                sprites.append(Sprite(frame))
+
+            animation = Animation(sprites, animation_type)
+            self.animationList.append(animation)
+
+        except Exception as e:
+            print(f"Erro ao carregar spritesheet ou JSON: {e}")
+
+
+    

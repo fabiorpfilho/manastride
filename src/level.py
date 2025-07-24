@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 import os
 from objects.static_objects.terrain import Terrain
 from objects.dynamic_objects.player import Player
+from objects.dynamic_objects.enemy import Enemy
 from collision_manager import CollisionManager
 from camera import Camera
 from spell_system.spell_system import SpellSystem
@@ -13,6 +14,7 @@ from objects.sprite import Sprite
 from objects.animation import Animation
 from objects.animation_type import AnimationType
 from objects.animation_manager import AnimationManager
+
 
 
 
@@ -56,13 +58,24 @@ class Level:
             size=(20, 31),  # Ajuste conforme o tamanho dos sprites
             animation_manager=animation_manager
         )
+
+        enemy_animation_manager = AnimationManager()
+        self.enemy = Enemy(
+            position=(300, 300),
+            size=(22, 31),  # mesmo tamanho dos frames do JSON
+            animation_manager=enemy_animation_manager,
+        )
+        self.all_sprites.append(self.enemy)
+
+
         self.all_sprites.append(self.player)
         self.player.spell_system = self.spell_system 
         
         # Processar a camada de blocos
         self._process_tilemap()
+
             
-        self.dynamic_objects = [self.player]  
+        self.dynamic_objects = [self.player, self.enemy]
         self.collision_manager = CollisionManager(
             self.dynamic_objects, self.platforms, world_width)
 
@@ -149,7 +162,8 @@ class Level:
 
     def update(self, delta_time):
         self.player.movement_update(delta_time)
-        self.dynamic_objects = [self.player]
+        self.enemy.movement_update(delta_time)
+        self.dynamic_objects = [self.player, self.enemy]
         player_pos = [self.player.position.x + self.player.size[0] / 2, 
                       self.player.position.y + self.player.size[1] / 2]
         
@@ -174,6 +188,7 @@ class Level:
         # Debug do player com o offset da câmera
         offset_player_rect = self.camera.apply(self.player.rect)
         self.player.draw_colliders_debug(self.screen, self.camera)  # Debug já considera o offset aplicado
+        self.enemy.draw_colliders_debug(self.screen, self.camera)
 
         # Desenha os projéteis com zoom
         for spell in self.spell_system.spellbook:

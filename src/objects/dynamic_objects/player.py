@@ -43,14 +43,14 @@ class Player(Character):
         self.spell_cooldown_timer = 0
         
         if self.animation_manager:
-            self.animation_manager.load_sprites_from_folder("assets/idle1", AnimationType.IDLE1)
-            self.animation_manager.load_sprites_from_folder("assets/run", AnimationType.WALK)
-            self.animation_manager.load_sprites_from_folder("assets/jump", AnimationType.JUMP)
-            self.animation_manager.load_sprites_from_folder("assets/fall", AnimationType.FALLING)
-            self.animation_manager.load_sprites_from_folder("assets/casting", AnimationType.CASTING)
-            self.animation_manager.load_sprites_from_folder("assets/attack1", AnimationType.ATTACK1)
-            self.animation_manager.load_sprites_from_folder("assets/attack2", AnimationType.ATTACK2)
-            self.animation_manager.load_sprites_from_folder("assets/attack3", AnimationType.ATTACK3)
+            self.animation_manager.load_sprites_from_folder("assets/player/idle1", AnimationType.IDLE1)
+            self.animation_manager.load_sprites_from_folder("assets/player/run", AnimationType.WALK)
+            self.animation_manager.load_sprites_from_folder("assets/player/jump", AnimationType.JUMP)
+            self.animation_manager.load_sprites_from_folder("assets/player/fall", AnimationType.FALLING)
+            self.animation_manager.load_sprites_from_folder("assets/player/casting", AnimationType.CASTING)
+            self.animation_manager.load_sprites_from_folder("assets/player/attack1", AnimationType.ATTACK1)
+            self.animation_manager.load_sprites_from_folder("assets/player/attack2", AnimationType.ATTACK2)
+            self.animation_manager.load_sprites_from_folder("assets/player/attack3", AnimationType.ATTACK3)
             if not self.animation_manager.animationList:
                 print("Erro: Nenhuma animação carregada")
             self.set_animation(AnimationType.IDLE1)
