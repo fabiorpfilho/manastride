@@ -226,7 +226,7 @@ class Level:
                 for y in range(0, screen_height + surface.get_height(), surface.get_height()):
                     # print(f"Y: {y})")
                     # print(f"Drawing background layer at offset ({offset_x + x}, {offset_y + y}) with factor {factor}")
-                    print(f"Drawing background layer {i} at offset ({offset_x + x}, {offset_y + y}) with factor {factor}")
+                    # print(f"Drawing background layer {i} at offset ({offset_x + x}, {offset_y + y}) with factor {factor}")
                     
                     self.screen.blit(surface, (offset_x + x, offset_y + y))
             i += 1

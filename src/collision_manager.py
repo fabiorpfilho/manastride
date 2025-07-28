@@ -34,7 +34,8 @@ class CollisionManager:
                 dynamic_object.speed_vector.x = 0
 
         # Atualiza posição do rect principal
-        dynamic_object.rect.topleft = dynamic_object.position
+        dynamic_object.rect.midbottom = dynamic_object.position.x + dynamic_object.size[0] // 2, dynamic_object.position.y + dynamic_object.size[1]
+        # dynamic_object.rect.topleft = dynamic_object.position
         for dynamic_collider in dynamic_object.colliders:
             dynamic_collider.rect.topleft = (
                 dynamic_object.rect.x + dynamic_collider.offset.x,
@@ -84,7 +85,8 @@ class CollisionManager:
                                 dynamic_object.speed_vector.y = 0
 
                         # Atualiza posições após ajuste
-                        dynamic_object.rect.topleft = dynamic_object.position
+                        dynamic_object.rect.midbottom = dynamic_object.position.x + dynamic_object.size[0] // 2, dynamic_object.position.y + dynamic_object.size[1]
+                        # dynamic_object.rect.topleft = dynamic_object.position
                         for dc in dynamic_object.colliders:
                             dc.rect.topleft = (
                                 dynamic_object.rect.x + dc.offset.x,

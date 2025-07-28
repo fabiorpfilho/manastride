@@ -15,10 +15,10 @@ class Camera:
 
     def update(self, size):
         # Calcula a posição da câmera centrada no alvo
-        # camera_x = target_rect.centerx - (self.screen_width / (2 * self.zoom))
-        # camera_y = target_rect.centery - (self.screen_height / (2 * self.zoom))
-        camera_x = size.x - (self.screen_width / (2 * self.zoom))
-        camera_y = size.y - (self.screen_height / (2 * self.zoom))
+        camera_x = size.centerx - (self.screen_width / (2 * self.zoom))
+        camera_y = size.centery - (self.screen_height / (2 * self.zoom))
+        # camera_x = size.x - (self.screen_width / (2 * self.zoom))
+        # camera_y = size.y - (self.screen_height / (2 * self.zoom))
 
         # Corrige para que a câmera não ultrapasse os limites do mundo
         max_x = self.world_width - self.screen_width / self.zoom

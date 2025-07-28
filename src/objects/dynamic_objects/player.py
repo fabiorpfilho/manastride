@@ -21,7 +21,7 @@ class Player(Character):
         self.is_casting = False
         self.is_attacking = False
         self.current_attack = None
-        self.attack_combo_timer = 0
+        self.attack_combo_timer = 5
         self.attack_combo_timeout = 0.5
         self.attack_cooldown = 0.3  # Cooldown entre ataques
         self.attack_cooldown_timer = 0  # Temporizador do cooldown de ataque
@@ -85,7 +85,13 @@ class Player(Character):
             if not self.facing_right:
                 sprite = pygame.transform.flip(sprite, True, False)
             self.image = sprite
-            self.rect = self.image.get_rect(topleft=(self.position.x, self.position.y))
+            anchor = self.rect.midbottom if hasattr(self, 'rect') else (self.position.x + self.size[0] // 2, self.position.y + self.size[1])
+
+            # Gere o novo rect com base na nova imagem
+            self.rect = self.image.get_rect()
+
+            # Reposicione o rect para manter os pés no lugar
+            self.rect.midbottom = anchor
         else:
             print("Aviso: Nenhuma animação disponível, usando sprite padrão")
             self.image.fill(self.sprite)
