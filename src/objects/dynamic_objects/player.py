@@ -84,14 +84,16 @@ class Player(Character):
             sprite = self.current_animation.animation[self.current_frame].image
             if not self.facing_right:
                 sprite = pygame.transform.flip(sprite, True, False)
-            self.image = sprite
+   
             anchor = self.rect.midbottom if hasattr(self, 'rect') else (self.position.x + self.size[0] // 2, self.position.y + self.size[1])
-
+            self.image = sprite
             # Gere o novo rect com base na nova imagem
             self.rect = self.image.get_rect()
 
             # Reposicione o rect para manter os pés no lugar
             self.rect.midbottom = anchor
+            self.position.x = self.rect.x
+            self.position.y = self.rect.y
         else:
             print("Aviso: Nenhuma animação disponível, usando sprite padrão")
             self.image.fill(self.sprite)
