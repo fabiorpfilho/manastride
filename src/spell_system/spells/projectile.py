@@ -98,43 +98,21 @@ class Projectile(Spell):
         MAX_DISTANCE = 500
         current_time = pygame.time.get_ticks()
         
-        def spawn_projectile_from_pending(pending):
-            projectile = Projectile(
-                major_rune=self.major_rune,
-                minor_runes=self.minor_runes
-            )
-            projectile.position.x = player_pos[0]
-            projectile.position.y = player_pos[1]
-            projectile.size.update(10, 10)
-            projectile.add_collider(
-                (0, 0), (10, 10), type='projectile', solid=True)
 
-            projectile.speed = pending["speed"]
-            projectile.damage = pending["damage"]
-            projectile.start_x = player_pos[0]
-            projectile.start_y = player_pos[1]
-            projectile.direction = pending["direction"]
-            projectile.major_rune_name = pending["major_rune"]
-            projectile.minor_rune_names = pending["minor_runes"]
-            projectile.effects = pending["effects"]
-            if "homing" in pending:
-                projectile.homing = pending["homing"]
-
-            self.projectiles.append(projectile)
-            self.pending_projectiles.remove(pending)
 
         # Spawn projéteis pendentes
         for pending in self.pending_projectiles[:]:
             if pending.get("spawn_time") is not None:
                 if current_time >= pending["spawn_time"]:
-                    spawn_projectile_from_pending(pending)
+                    self._spawn_projectile(pending, player_pos)
             else:
-                spawn_projectile_from_pending(pending)
+                self._spawn_projectile(pending, player_pos)
             
             
         # Atualizar projéteis ativos
         for proj in self.projectiles[:]:
             if proj.marked_for_removal:
+                print(f"Projétil {proj.name} removido por marcação.")
                 self.projectiles.remove(proj)
                 continue
             
@@ -153,11 +131,43 @@ class Projectile(Spell):
             
             
             if distance_traveled > MAX_DISTANCE:
+                print(f"Projétil {proj.name} removido por distância máxima.")
                 proj.marked_for_removal = True
             # if "slow" in proj.effects:
             #     print(f"🧊 Inimigo atingido por {proj.name} desacelerado!")
             # if "burn" in proj.effects:
             #     print(f"🔥 In System: imigo atingido por {proj.name} queimando!")
+            
+    def _spawn_projectile(self, pending, player_pos):
+        """Helper method to spawn a projectile from pending data."""
+        projectile = Projectile(
+            major_rune=self.major_rune,
+            minor_runes=self.minor_runes
+        )
+        projectile.position.x = player_pos[0]
+        projectile.position.y = player_pos[1]
+        projectile.size.update(10, 10)
+        projectile.add_collider(
+            (0, 0), (10, 10), type='projectile', solid=True)
+
+        projectile.speed = pending["speed"]
+        projectile.damage = pending["damage"]
+        projectile.start_x = player_pos[0]
+        projectile.start_y = player_pos[1]
+        projectile.direction = pending["direction"]
+        projectile.major_rune_name = pending["major_rune"]
+        projectile.minor_rune_names = pending["minor_runes"]
+        projectile.effects = pending["effects"]
+        if "homing" in pending:
+            projectile.homing = pending["homing"]
+
+        # Precompute dx, dy for Fan projectiles
+        if pending["major_rune"] == "Fan":
+            projectile.dx = math.cos(pending["direction"])
+            projectile.dy = -math.sin(pending["direction"])
+
+        self.projectiles.append(projectile)
+        self.pending_projectiles.remove(pending)
 
     def draw(self, surface, camera):
         for proj in self.projectiles:

@@ -34,7 +34,12 @@ class CollisionManager:
                 dynamic_object.speed_vector.x = 0
 
         # Atualiza posição do rect principal
-        dynamic_object.rect.topleft = dynamic_object.position
+        if hasattr(dynamic_object, "facing_right") and hasattr(dynamic_object, "spriteOffset"):
+            dynamic_object.rect.centerx = dynamic_object.position.x + dynamic_object.spriteOffset[0]
+            dynamic_object.rect.centery = dynamic_object.position.y + dynamic_object.spriteOffset[1]
+        else:
+            dynamic_object.rect.centerx = dynamic_object.position.x
+            dynamic_object.rect.centery = dynamic_object.position.y + dynamic_object.spriteOffset[1] + 10000
         for dynamic_collider in dynamic_object.colliders:
             dynamic_collider.rect.topleft = (
                 dynamic_object.rect.x + dynamic_collider.offset.x,
@@ -62,14 +67,9 @@ class CollisionManager:
                         if altura_invasao > largura_invasao:
                             # Corrige em X
                             if dynamic_object.rect.centerx < static_collider.rect.centerx:
-                                
                                 dynamic_object.position.x -= largura_invasao + dynamic_collider.offset.x
-                                if(dynamic_collider.type == "enemy_body"):
-                                    dynamic_object.facing_right = False
                             else:
                                 dynamic_object.position.x += largura_invasao + dynamic_collider.offset.x
-                                if(dynamic_collider.type == "enemy_body"):
-                                    dynamic_object.facing_right = True
                             dynamic_object.speed_vector.x = 0
                         else:
                             # Corrige em Y
@@ -84,7 +84,12 @@ class CollisionManager:
                                 dynamic_object.speed_vector.y = 0
 
                         # Atualiza posições após ajuste
-                        dynamic_object.rect.topleft = dynamic_object.position
+                        if hasattr(dynamic_object, "facing_right") and hasattr(dynamic_object, "spriteOffset"):
+                            dynamic_object.rect.centerx = dynamic_object.position.x + dynamic_object.spriteOffset[0]
+                            dynamic_object.rect.centery = dynamic_object.position.y + dynamic_object.spriteOffset[1]
+                        else:
+                            dynamic_object.rect.centerx = dynamic_object.position.x
+                            dynamic_object.rect.centery = dynamic_object.position.y + dynamic_object.spriteOffset[1] + 10000
                         for dc in dynamic_object.colliders:
                             dc.rect.topleft = (
                                 dynamic_object.rect.x + dc.offset.x,

@@ -13,10 +13,12 @@ class Camera:
         """Define o nível de zoom."""
         self.zoom = max(0.5, min(zoom, 3.0))  # Limita o zoom entre 0.5x e 3x para evitar problemas
 
-    def update(self, target_rect):
+    def update(self, size):
         # Calcula a posição da câmera centrada no alvo
-        camera_x = target_rect.centerx - (self.screen_width / (2 * self.zoom))
-        camera_y = target_rect.centery - (self.screen_height / (2 * self.zoom))
+        # camera_x = target_rect.centerx - (self.screen_width / (2 * self.zoom))
+        # camera_y = target_rect.centery - (self.screen_height / (2 * self.zoom))
+        camera_x = size.x - (self.screen_width / (2 * self.zoom))
+        camera_y = size.y - (self.screen_height / (2 * self.zoom))
 
         # Corrige para que a câmera não ultrapasse os limites do mundo
         max_x = self.world_width - self.screen_width / self.zoom
@@ -26,18 +28,15 @@ class Camera:
         self.offset.x = min(max(camera_x, 0), max_x if max_x > 0 else 0)
         self.offset.y = min(max(camera_y, 0), max_y if max_y > 0 else 0)
 
-    def apply(self, rect):
-        """Aplica o deslocamento e o zoom ao retângulo."""
-        # Escala o retângulo com base no zoom
+    def apply(self, rect, player= False):
         scaled_width = rect.width * self.zoom
         scaled_height = rect.height * self.zoom
         scaled_rect = pygame.Rect(0, 0, scaled_width, scaled_height)
-
-        # Calcula a posição escalada e ajustada pelo offset
         scaled_x = (rect.x - self.offset.x) * self.zoom
         scaled_y = (rect.y - self.offset.y) * self.zoom
         scaled_rect.topleft = (scaled_x, scaled_y)
-
+        # if player:
+        #     print(f"Camera.apply: input rect.x={rect.x}, rect.y={rect.y}, output scaled_rect.x={scaled_rect.x}, scaled_rect.y={scaled_rect.y}, zoom={self.zoom}, offset.x={self.offset.x}, offset.y={self.offset.y}")
         return scaled_rect
 
     def apply_surface(self, surface):

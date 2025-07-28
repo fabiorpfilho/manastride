@@ -25,6 +25,7 @@ class Player(Character):
         self.attack_combo_timeout = 0.5
         self.attack_cooldown = 0.3  # Cooldown entre ataques
         self.attack_cooldown_timer = 0  # Temporizador do cooldown de ataque
+        self.spriteOffset = (0, 0)  # Offset do sprite para centralizar o personagem
 
         self.animation_speeds = {
             AnimationType.IDLE1: 0.35,
@@ -81,14 +82,39 @@ class Player(Character):
 
     def update_image(self):
         if self.current_animation and self.current_animation.animation:
-            sprite = self.current_animation.animation[self.current_frame].image
+            sprite = self.current_animation.animation[self.current_frame]
+            sprite_image = sprite.image
+
+            # Aplica o flip horizontal se necessário
             if not self.facing_right:
-                sprite = pygame.transform.flip(sprite, True, False)
-            self.image = sprite
-            self.rect = self.image.get_rect(topleft=(self.position.x, self.position.y))
-        else:
-            print("Aviso: Nenhuma animação disponível, usando sprite padrão")
-            self.image.fill(self.sprite)
+                sprite_image = pygame.transform.flip(sprite.image, True, False)
+
+            self.image = sprite_image
+
+            # Obtém o retângulo da imagem
+            self.rect = self.image.get_rect()
+
+            # Calcula a posição do retângulo com base no ponto de ancoragem
+            anchor_x = self.position.x + self.size[0] / 2  # Centro do corpo no eixo X
+            anchor_y = self.position.y + self.size[1]      # Base do personagem no eixo Y
+
+            # Aplica os offsets do sprite
+            offset_x = sprite.offset_x
+            offset_y = sprite.offset_y
+
+            # Ajusta a posição do retângulo para manter o ponto de ancoragem fixo
+            self.rect.x = anchor_x - self.rect.width / 2 + offset_x
+            self.rect.y = anchor_y - self.rect.height + offset_y
+            
+            # if(self.current_animation.type in [AnimationType.ATTACK1, AnimationType.ATTACK2, AnimationType.ATTACK3, AnimationType.CASTING]):
+            #     # Ajusta a posição do retângulo para o ataque
+            #     print(f"Atualizando posição do retângulo para ataque: {self.rect.x}, {self.rect.y}")
+
+            # Compensação adicional para o flip
+            if not self.facing_right:
+                # Quando virado para a esquerda, ajusta o rect para manter o centro do corpo
+                self.rect.x -= (self.rect.width - self.size[0])
+
 
     def movement_update(self, delta_time):
         keys = pygame.key.get_pressed()

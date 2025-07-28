@@ -28,7 +28,7 @@ class GameController:
             self.last_time = current_time
         
             
-            pygame.display.set_caption(f"{self.clock.get_fps():.1f} FPS")
+            # pygame.display.set_caption(f"{self.clock.get_fps():.1f} FPS")
 
 
             for event in pygame.event.get():
