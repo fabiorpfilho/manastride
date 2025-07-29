@@ -6,15 +6,14 @@ from typing import Optional
 from objects.animation_manager import AnimationManager
 
 class Player(Character):
-    def __init__(self, position, size, animation_manager: Optional['AnimationManager'] = None, 
+    def __init__(self, position, size, 
                  sprite=(0, 255, 0), collide_damage=5, invincible=False, health=100, 
                  attackable=True, attack_speed=0, damage=10, speed=0, gravity=0, 
                  speed_vector=(0, 0), jump_speed=0):
         
-        super().__init__(position, size, None, sprite, collide_damage, invincible, health,
+        super().__init__(position, size, sprite, collide_damage, invincible, health,
                          attackable, attack_speed, damage, speed, gravity, speed_vector, jump_speed)
         
-        self.animation_manager = animation_manager
         self.current_animation = None
         self.current_frame = 0
         self.animation_timer = 0

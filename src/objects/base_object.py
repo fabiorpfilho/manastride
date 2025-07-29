@@ -12,7 +12,7 @@ class Object:
         self.colliders = []
         self.image = pygame.Surface((self.size))
         self.rect = self.image.get_rect(
-            topleft=(self.position.x, self.position.y))
+            midbottom=(self.position.x, self.position.y))
         
     def add_collider(self, offset, size, type, solid):
         collider = Collider(self, offset, size, type, solid)
@@ -24,4 +24,4 @@ class Object:
             # Usa camera.apply para transformar o retângulo do colisor
             collider_rect = camera.apply(collider.rect)
             # Desenha o colisor com o retângulo já escalado
-            # collider.draw_debug(surface, collider_rect)
+            collider.draw_debug(surface, collider_rect)

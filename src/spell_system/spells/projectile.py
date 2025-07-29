@@ -110,10 +110,13 @@ class Projectile(Spell):
             
             
         # Atualizar projéteis ativos
+        print(f"Projéteis: {self.projectiles}")
+        # print(f"Colisor: {}")
         for proj in self.projectiles[:]:
             if proj.marked_for_removal:
-                print(f"Projétil {proj.name} removido por marcação.")
                 self.projectiles.remove(proj)
+            
+                print(f"Projétil {proj.name} removido por marcação.")
                 continue
             
             if proj.major_rune_name == "Fan":

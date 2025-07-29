@@ -23,15 +23,6 @@ class Collider:
         # print(f"Collider.update_position: collider.rect.x={self.rect.x}, collider.rect.y={self.rect.y}, parent.position.x={self.owner.position.x}, parent.position.y={self.owner.position.y}, parent.rect.x={self.owner.rect.x}, parent.rect.y={self.owner.rect.y}")
         self.rect.x = self.owner.position.x + self.offset.x
         self.rect.y = self.owner.position.y + self.offset.y
-
-    # def collides_with(self, other):
-    #     rect = pygame.Rect(
-    #         self.owner.rect.x + self.offset.x,
-    #         self.owner.rect.y + self.offset.y,
-    #         self.size.x,
-    #         self.size.y
-    #     )
-    #     return rect.colliderect(other.rect)
     
     def draw_debug(self, surface, rect):
         color = (255, 0, 0) if self.solid else (0, 0, 255)

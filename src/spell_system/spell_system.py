@@ -2,11 +2,27 @@ from spell_system.rune import Rune
 from spell_system.rune_type import RuneType
 from spell_system.spell import Spell
 from typing import List
+from spell_system.spells.projectile import Projectile
 
 class SpellSystem:
     def __init__(self):
         self.runes: List[Rune] = self.create_runes()         # Runas disponíveis no sistema
         self.spellbook: List[Spell] = []     # Feitiços conhecidos ou salvos
+        self.setup_default_spells()
+        
+    def setup_default_spells(self):
+        ice_spell = Projectile(
+            major_rune=self.runes[2],
+            minor_runes=[self.runes[3]]
+        )
+        fan_spell = Projectile(
+            major_rune=self.runes[0],
+            minor_runes=[self.runes[4]]
+        )
+
+        self.spellbook.append(ice_spell)
+        self.spellbook.append(fan_spell)
+
 
     def cast_spell(self, index: int, direction):
         """
@@ -67,3 +83,5 @@ class SpellSystem:
                 effect={"burn": {"damage": 2, "duration": 3}}
             )
         ]
+        
+

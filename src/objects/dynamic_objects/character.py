@@ -6,10 +6,10 @@ from pygame.math import Vector2
 
 
 class Character(EntityWithAnimation):
-    def __init__(self, position, size, animation_manager, sprite=(0, 255, 0), collide_damage=5, invincible=False, health=100, attackable=True, attack_speed=0, 
+    def __init__(self, position, size, sprite=(0, 255, 0), collide_damage=5, invincible=False, health=100, attackable=True, attack_speed=0, 
                  damage=10,  speed=3, gravity=1, speed_vector=(0, 0), jump_speed=10):
       
-        super().__init__(position, size, animation_manager, sprite=sprite)
+        super().__init__(position, size, sprite=sprite)
         self.attack_speed = attack_speed
         self.damage = damage
         self.speed = speed  

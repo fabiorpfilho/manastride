@@ -1,1 +1,0 @@
-#Npc que se deslocará de lugar
