@@ -13,7 +13,7 @@ class Player(Character):
         
         super().__init__(position, size, sprite, collide_damage, invincible, health,
                          attackable, attack_speed, damage, speed, gravity, speed_vector, jump_speed)
-        
+        self.tag = "player"
         self.current_animation = None
         self.current_frame = 0
         self.animation_timer = 0
@@ -38,6 +38,7 @@ class Player(Character):
 
         self.facing_right = True
         self.add_collider((0, 0), self.size, type='body', solid=True)
+        self.add_collider((0, 0), self.size, type='hurt_box', solid=True)
         self.spell_cooldown = 0.5
         self.spell_cooldown_timer = 0
         

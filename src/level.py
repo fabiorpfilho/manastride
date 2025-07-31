@@ -116,7 +116,7 @@ class Level:
 
         # Desenha todos os sprites com o offset da câmera e zoom
         for sprite in self.all_sprites:
-            offset_rect = self.camera.apply(sprite.rect, sprite == self.player)
+            offset_rect = self.camera.apply(sprite.rect)
             scaled_image = self.camera.apply_surface(sprite.image)
             self.screen.blit(scaled_image, offset_rect)
         # print(f"Lista de spell no draw: {self.spell_system.spellbook}")
@@ -140,9 +140,12 @@ class Level:
                       self.player.position.y + self.player.size[1] / 2]
 
         for spell in self.spell_system.spellbook:
-            self.dynamic_objects.extend(spell.projectiles)
-            print(f"Lista de spell no update: {spell.projectiles}")
-        print(f"Dynamic objects: {self.dynamic_objects}")
+            for proj in spell.projectiles:
+                if proj not in self.dynamic_objects:
+                    self.dynamic_objects.append(proj)
+
+        #     print(f"Lista de spell no update: {spell.projectiles}")
+        # print(f"Dynamic objects: {self.dynamic_objects}")
         self.collision_manager.update(self.dynamic_objects)
         self.camera.update(self.player.rect)   
         
@@ -153,3 +156,8 @@ class Level:
     
         for spell in self.spell_system.spellbook:
             spell.update(delta_time, player_pos)
+
+        self.dynamic_objects = [
+            obj for obj in self.dynamic_objects
+            if not getattr(obj, "marked_for_removal", False)
+        ]

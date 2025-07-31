@@ -17,10 +17,11 @@ class Projectile(Spell):
             sprite=(0, 255, 0)
         )
         self.add_collider((0, 0), (self.size.x, self.size.y),
-                          type='projectile', solid=True)
+                          type='body', solid=True)
         self.projectiles = []            # Projéteis já ativos na tela
         self.pending_projectiles = []    # Projéteis esperando o tempo de spawn
         self.marked_for_removal = False
+        self.tag = "projectile"
 
     def execute(self, direction: float):
         if not self.validate():
@@ -110,13 +111,13 @@ class Projectile(Spell):
             
             
         # Atualizar projéteis ativos
-        print(f"Projéteis: {self.projectiles}")
+        # print(f"Projéteis: {self.projectiles}")
         # print(f"Colisor: {}")
         for proj in self.projectiles[:]:
             if proj.marked_for_removal:
                 self.projectiles.remove(proj)
             
-                print(f"Projétil {proj.name} removido por marcação.")
+                # print(f"Projétil {proj.name} removido por marcação.")
                 continue
             
             if proj.major_rune_name == "Fan":
@@ -134,7 +135,7 @@ class Projectile(Spell):
             
             
             if distance_traveled > MAX_DISTANCE:
-                print(f"Projétil {proj.name} removido por distância máxima.")
+                # print(f"Projétil {proj.name} removido por distância máxima.")
                 proj.marked_for_removal = True
             # if "slow" in proj.effects:
             #     print(f"🧊 Inimigo atingido por {proj.name} desacelerado!")

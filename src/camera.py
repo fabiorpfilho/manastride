@@ -12,9 +12,9 @@ class Camera:
     def set_zoom(self, zoom):
         self.zoom = max(0.5, min(zoom, 3.0))  # Limita o zoom entre 0.5x e 3x para evitar problemas
 
-    def update(self, size):
-        camera_x = size.centerx - (self.screen_width / (2 * self.zoom))
-        camera_y = size.centery - (self.screen_height / (2 * self.zoom))
+    def update(self, playerRect):
+        camera_x = playerRect.centerx - (self.screen_width / (2 * self.zoom))
+        camera_y = playerRect.centery - (self.screen_height / (2 * self.zoom))
 
         max_x = self.world_width - self.screen_width / self.zoom
         max_y = self.world_height - self.screen_height / self.zoom
@@ -22,7 +22,7 @@ class Camera:
         self.offset.x = min(max(camera_x, 0), max_x if max_x > 0 else 0)
         self.offset.y = min(max(camera_y, 0), max_y if max_y > 0 else 0)
 
-    def apply(self, rect, player= False):
+    def apply(self, rect):
         scaled_width = rect.width * self.zoom
         scaled_height = rect.height * self.zoom
         scaled_rect = pygame.Rect(0, 0, scaled_width, scaled_height)

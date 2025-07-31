@@ -14,7 +14,7 @@ class HammerBot(Character):
         
         super().__init__(position, size, sprite, collide_damage, invincible, health,
                          attackable, attack_speed, damage, speed, gravity, speed_vector, jump_speed)
-        
+        self.tag = "enemy"
         self.current_animation = None
         self.current_frame = 0
         self.animation_timer = 0
@@ -28,7 +28,9 @@ class HammerBot(Character):
             AnimationType.DEATH: 0.15,
         }
         self.facing_right = True
-        self.add_collider((0, 0), self.size, type='enemy_body', solid=True)
+        self.add_collider((0, 0), self.size, type='body', solid=True)
+        self.add_collider((0, 0), self.size, type='hurt_box', solid=True)
+        self.add_collider((0, 0), self.size, type='attack_box', solid=True)
         self.patrol_speed = SPEED - 160
         
         # Edge detection sensors (relative to character position)
@@ -114,19 +116,6 @@ class HammerBot(Character):
             self.facing_right = not self.facing_right
             self.speed_vector.x = -self.speed_vector.x
         
-        # Check for wall collision
-        # future_position = (self.position.x + self.speed_vector.x * delta_time, self.position.y)
-        # future_rect = pygame.Rect(future_position, self.size)
-        
-        # for platform in platforms:
-        #     if future_rect.colliderect(platform.rect) and platform.colliders[0].type == "terrain":
-        #         print((f"future_rect: {future_rect}, platform: {platform.rect}"))
-        #         print(f"Collision with platform at {platform.rect.topleft}")
-        #         # If hitting a wall, reverse direction
-        #         self.facing_right = not self.facing_right
-        #         self.speed_vector.x = -self.speed_vector.x
-        #         break
-        
         # Update position   
         self.position.x += self.speed_vector.x * delta_time
 
@@ -183,8 +172,8 @@ class HammerBot(Character):
         right_sensor_rect = pygame.Rect(right_sensor_pos, sensor_size)
         
         # Apply camera transformation (offset and zoom)
-        left_sensor_screen = camera.apply(left_sensor_rect, False)
-        right_sensor_screen = camera.apply(right_sensor_rect, False)
+        left_sensor_screen = camera.apply(left_sensor_rect)
+        right_sensor_screen = camera.apply(right_sensor_rect)
         
         # Draw sensors: red for left, blue for right
         pygame.draw.rect(screen, (255, 0, 0), left_sensor_screen, 0)  # Filled red rectangle

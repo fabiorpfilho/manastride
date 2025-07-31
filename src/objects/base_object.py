@@ -12,7 +12,7 @@ class Object:
         self.colliders = []
         self.image = pygame.Surface((self.size))
         self.rect = self.image.get_rect(
-            midbottom=(self.position.x, self.position.y))
+            topleft=(self.position.x, self.position.y))
         
     def add_collider(self, offset, size, type, solid):
         collider = Collider(self, offset, size, type, solid)
