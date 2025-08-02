@@ -123,7 +123,7 @@ class Level:
         for spell in self.spell_system.spellbook:
             spell.draw(self.screen, self.camera)
 
-        self.player.draw_colliders_debug(self.screen, self.camera)
+        # self.player.draw_colliders_debug(self.screen, self.camera)
         self.enemy.draw_colliders_debug(self.screen, self.camera)
         self.enemy.draw_sensors_debug(self.screen, self.camera)
         # for platform in self.platforms:
@@ -147,7 +147,7 @@ class Level:
         #     print(f"Lista de spell no update: {spell.projectiles}")
         # print(f"Dynamic objects: {self.dynamic_objects}")
         self.collision_manager.update(self.dynamic_objects)
-        self.camera.update(self.player.rect)   
+        self.camera.update(self.player)   
         
         # Atualizar os offsets do fundo com base no movimento da câmera
         for layer in self.background_layers:

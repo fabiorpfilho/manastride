@@ -8,19 +8,18 @@ import json
 
 class HammerBot(Character):
     def __init__(self, position, size,
-                 sprite=(0, 255, 0), collide_damage=5, invincible=False, health=100, 
-                 attackable=True, attack_speed=0, damage=10, speed=0, gravity=0, 
+                 sprite=(0, 255, 0),  invincible=False, health=100, 
+                 attackable=True, damage=20, speed= SPEED - 160, gravity=0, 
                  speed_vector=(0, 0), jump_speed=0):
         
-        super().__init__(position, size, sprite, collide_damage, invincible, health,
-                         attackable, attack_speed, damage, speed, gravity, speed_vector, jump_speed)
-        self.tag = "enemy"
+        super().__init__(position, size, sprite, invincible, health,
+                         attackable, damage, speed, gravity, speed_vector, jump_speed)
+        self.tag = "enemy_npc"
         self.current_animation = None
         self.current_frame = 0
         self.animation_timer = 0
         self.is_attacking = False
         self.attack_cooldown = 0.3
-        self.spriteOffset = (0, 0)
         self.animation_speeds = {
             AnimationType.IDLE1: 0.35,
             AnimationType.WALK: 0.1,
@@ -31,7 +30,6 @@ class HammerBot(Character):
         self.add_collider((0, 0), self.size, type='body', solid=True)
         self.add_collider((0, 0), self.size, type='hurt_box', solid=True)
         self.add_collider((0, 0), self.size, type='attack_box', solid=True)
-        self.patrol_speed = SPEED - 160
         
         # Edge detection sensors (relative to character position)
         self.left_sensor_offset = (-10, self.size[1] + 5)  # Slightly outside left bottom
@@ -109,7 +107,7 @@ class HammerBot(Character):
         left_platform, right_platform = self.check_edge(platforms)
         
         # Set movement direction based on facing
-        self.speed_vector.x = self.patrol_speed if self.facing_right else -self.patrol_speed
+        self.speed_vector.x = self.speed if self.facing_right else -self.speed
         
         # Turn around if at edge or hitting a wall
         if (self.facing_right and not right_platform) or (not self.facing_right and not left_platform):
@@ -121,9 +119,10 @@ class HammerBot(Character):
 
         # Update colliders
         for collider in self.colliders:
-            collider.update_position()
+            collider.update_position(self.facing_right)
 
         self.update_animation(delta_time)
+        self.rect.topleft = self.position
 
     def update_animation(self, delta_time):
         if not self.animation_manager or not self.current_animation:
@@ -178,3 +177,6 @@ class HammerBot(Character):
         # Draw sensors: red for left, blue for right
         pygame.draw.rect(screen, (255, 0, 0), left_sensor_screen, 0)  # Filled red rectangle
         pygame.draw.rect(screen, (0, 0, 255), right_sensor_screen, 0)  # Filled blue 
+    
+    def handle_damage(enemy_damage):
+        pass

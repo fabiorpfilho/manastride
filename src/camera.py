@@ -3,24 +3,38 @@ from pygame.math import Vector2
 
 class Camera:
     def __init__(self, screen_size, world_width, world_height, zoom=1.0):
-        self.screen_width, self.screen_height = screen_size
+        self.screen_size = screen_size
         self.world_width = world_width
         self.world_height = world_height
-        self.offset = Vector2(0, 0)
-        self.zoom = zoom  # Fator de zoom inicial (1.0 = sem zoom, 2.0 = 2x maior, etc.)
+        self.zoom = zoom
+        self.offset = pygame.math.Vector2(0, 0)
+        self.target_offset = pygame.math.Vector2(0, 0)
+        self.lerp_speed = 0.05  # Velocidade de suavização (0.0 a 1.0)
 
     def set_zoom(self, zoom):
         self.zoom = max(0.5, min(zoom, 3.0))  # Limita o zoom entre 0.5x e 3x para evitar problemas
 
-    def update(self, playerRect):
-        camera_x = playerRect.centerx - (self.screen_width / (2 * self.zoom))
-        camera_y = playerRect.centery - (self.screen_height / (2 * self.zoom))
+    def update(self, player):
+        # Calcula a posição desejada da câmera
+        screen_width, screen_height = self.screen_size
+        offset_y = player.current_animation.animation[player.current_frame].offset_y
 
-        max_x = self.world_width - self.screen_width / self.zoom
-        max_y = self.world_height - self.screen_height / self.zoom
+        # Use midbottom como referência em vez de center
+        target_x = player.rect.centerx - (screen_width / (2 * self.zoom))
+        # Subtraia o offset_y para compensar o deslocamento vertical do sprite
+        target_y = player.rect.centery - (screen_height / (2 * self.zoom))
 
-        self.offset.x = min(max(camera_x, 0), max_x if max_x > 0 else 0)
-        self.offset.y = min(max(camera_y, 0), max_y if max_y > 0 else 0)
+        # Define o offset alvo
+        self.target_offset.x = target_x
+        self.target_offset.y = target_y
+
+        # Interpola suavemente para o offset alvo
+        self.offset.x += (self.target_offset.x - self.offset.x) * self.lerp_speed
+        self.offset.y += (self.target_offset.y - self.offset.y) * self.lerp_speed
+
+        # Limita o offset para não mostrar fora do mundo
+        self.offset.x = max(0, min(self.offset.x, self.world_width - screen_width / self.zoom))
+        self.offset.y = max(0, min(self.offset.y, self.world_height - screen_height / self.zoom))
 
     def apply(self, rect):
         scaled_width = rect.width * self.zoom

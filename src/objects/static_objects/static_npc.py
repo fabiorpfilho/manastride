@@ -1,1 +1,0 @@
-#Npc que não se movimentará, será estatico, etc

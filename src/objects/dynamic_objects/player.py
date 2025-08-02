@@ -7,12 +7,12 @@ from objects.animation_manager import AnimationManager
 
 class Player(Character):
     def __init__(self, position, size, 
-                 sprite=(0, 255, 0), collide_damage=5, invincible=False, health=100, 
-                 attackable=True, attack_speed=0, damage=10, speed=0, gravity=0, 
+                 sprite=(0, 255, 0),invincible=False, health=100, 
+                 attackable=True, damage=10, speed=0, gravity=0, 
                  speed_vector=(0, 0), jump_speed=0):
         
-        super().__init__(position, size, sprite, collide_damage, invincible, health,
-                         attackable, attack_speed, damage, speed, gravity, speed_vector, jump_speed)
+        super().__init__(position, size, sprite, invincible, health,
+                         attackable,damage, speed, gravity, speed_vector, jump_speed)
         self.tag = "player"
         self.current_animation = None
         self.current_frame = 0
@@ -82,18 +82,35 @@ class Player(Character):
     def update_image(self):
         if self.current_animation and self.current_animation.animation:
             sprite = self.current_animation.animation[self.current_frame].image
+            offset_y = self.current_animation.animation[self.current_frame].offset_y
             if not self.facing_right:
                 sprite = pygame.transform.flip(sprite, True, False)
-   
-            anchor = self.rect.midbottom if hasattr(self, 'rect') else (self.position.x + self.size[0] // 2, self.position.y + self.size[1])
-            self.image = sprite
-            # Gere o novo rect com base na nova imagem
-            self.rect = self.image.get_rect()
 
-            # Reposicione o rect para manter os pés no lugar
-            self.rect.midbottom = anchor
+            # Salve o anchor (midbottom atual) antes de mudar a imagem
+            anchor = self.rect.midbottom
+
+            # Atualize a imagem
+            self.image = sprite
+
+            # Crie um novo rect para a nova imagem
+            new_rect = self.image.get_rect()
+
+            # Posicione o novo rect para que o midbottom coincida com o anchor, ajustando pelo offset_y
+            new_rect.midbottom = (anchor[0], anchor[1] )
+
+            # Atualize o rect do sprite
+            self.rect = new_rect
+
+            # Atualize a posição do sprite
             self.position.x = self.rect.x
             self.position.y = self.rect.y
+
+            # Debug para verificar o comportamento
+            if self.current_animation.type == AnimationType.ATTACK1:
+                print(f"Current frame: {self.current_frame}")
+                print(f"OFFSET: {offset_y}")
+                print(f"imageRect: {self.rect}")
+                print(f"MIDbottom: {self.rect.midbottom}")
         else:
             print("Aviso: Nenhuma animação disponível, usando sprite padrão")
             self.image.fill(self.sprite)
@@ -162,7 +179,7 @@ class Player(Character):
         self.speed_vector.y += g * delta_time
 
         for collider in self.colliders:
-            collider.update_position()
+            collider.update_position(self.facing_right)
 
         self.update_animation(delta_time)
 
@@ -206,3 +223,8 @@ class Player(Character):
             else:
                 self.current_frame = (self.current_frame + 1) % len(self.current_animation.animation)
             self.update_image()
+
+    def handle_damage(self, enemy_damage):
+        # print(f"Sofreu dano! {enemy_damage}")
+        pass
+

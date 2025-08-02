@@ -19,10 +19,14 @@ class Collider:
         self.type = type  # Tipo do collider (ex: hitbox, ataque, damage)
         self.solid = solid  # Define se impede passagem
 
-    def update_position(self):
+    def update_position(self, facing_rigt):
         # print(f"Collider.update_position: collider.rect.x={self.rect.x}, collider.rect.y={self.rect.y}, parent.position.x={self.owner.position.x}, parent.position.y={self.owner.position.y}, parent.rect.x={self.owner.rect.x}, parent.rect.y={self.owner.rect.y}")
-        self.rect.x = self.owner.position.x + self.offset.x
-        self.rect.y = self.owner.position.y + self.offset.y
+        if not facing_rigt:
+            self.rect.x = self.owner.rect.centerx + self.offset.x
+            self.rect.y = self.owner.rect.centery + self.offset.y
+        else:    
+            self.rect.x = self.owner.rect.centerx + self.offset.x
+            self.rect.y = self.owner.rect.centery + self.offset.y
     
     def draw_debug(self, surface, rect):
         color = (255, 0, 0) if self.solid else (0, 0, 255)

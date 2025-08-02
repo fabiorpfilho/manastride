@@ -38,7 +38,6 @@ class CollisionManager:
 
     def _handle_body_collision(self, dynamic_object, dynamic_collider, objects_to_remove):
         ground_collision_detected = False
-
         for static in self.static_objects:
             for static_collider in static.colliders:
                 if dynamic_collider.rect.colliderect(static_collider.rect):
@@ -51,14 +50,14 @@ class CollisionManager:
                     largura_invasao = intersection.width
                     altura_invasao = intersection.height
 
-                    if altura_invasao > largura_invasao:
+                    if largura_invasao < altura_invasao:
                         if dynamic_object.rect.centerx < static_collider.rect.centerx:
                             dynamic_object.position.x -= largura_invasao + dynamic_collider.offset.x
-                            if dynamic_object.tag == "enemy":
+                            if "npc" in dynamic_object.tag:
                                 dynamic_object.facing_right = False
                         else:
                             dynamic_object.position.x += largura_invasao + dynamic_collider.offset.x
-                            if dynamic_object.tag == "enemy":
+                            if "npc" in dynamic_object.tag:
                                 dynamic_object.facing_right = True
                         dynamic_object.speed_vector.x = 0
                     else:
@@ -86,7 +85,7 @@ class CollisionManager:
 
             for other_collider in other_object.colliders:
                 if other_collider.type == "attack_box" and hurt_collider.rect.colliderect(other_collider.rect):
-                    # dynamic_object.handle_damage(other_object.damage)
+                    dynamic_object.handle_damage(other_object.damage)
                     return
 
     def _detect_is_on_ground(self, ground_collision_detected, dynamic_object):

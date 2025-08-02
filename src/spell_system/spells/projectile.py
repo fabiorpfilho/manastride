@@ -152,7 +152,7 @@ class Projectile(Spell):
         projectile.position.y = player_pos[1]
         projectile.size.update(10, 10)
         projectile.add_collider(
-            (0, 0), (10, 10), type='projectile', solid=True)
+            (0, 0), (10, 10), type='body', solid=True)
 
         projectile.speed = pending["speed"]
         projectile.damage = pending["damage"]
