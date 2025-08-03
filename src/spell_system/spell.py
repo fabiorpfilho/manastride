@@ -42,8 +42,14 @@ class Spell(EntityWithAnimation):
         if any(r.rune_type != RuneType.MINOR for r in self.minor_runes):
             return False
         return True
+    
+    def sync_position(self, direction):
+        self.rect.topleft = self.position
+        for collider in self.colliders:
+            collider.update_position(self.rect, direction)
 
-    def execute(self, direction, player_pos):
+
+    def execute(self, direction, owner, player_pos):
         pass
 
     def update(self, delta_time, player_pos):

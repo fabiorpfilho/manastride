@@ -24,7 +24,7 @@ class SpellSystem:
         self.spellbook.append(fan_spell)
 
 
-    def cast_spell(self, index: int, direction):
+    def cast_spell(self, index: int, direction, owner):
         """
         Casts a spell from the spellbook based on the provided numeric index.
         Index 1 maps to spellbook[0], index 2 to spellbook[1], etc.
@@ -34,7 +34,7 @@ class SpellSystem:
             spell = self.spellbook[spell_index]
             if spell.validate():
                 # print(f"Lançando feitiço: {spell.name}")
-                spell.execute(direction)
+                spell.execute(direction, owner)
             else:
                 print(f"Feitiço inválido: {spell.name}")
         else:

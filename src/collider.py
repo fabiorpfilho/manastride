@@ -6,7 +6,7 @@ import pygame
 from pygame.math import Vector2
 
 class Collider:
-    def __init__(self, owner, offset, size, type='body', solid=True):
+    def __init__(self, owner, offset, size, type='body', active=True):
         self.owner = owner  # Objeto que possui esse collider
         self.offset = Vector2(offset)
         self.size = Vector2(size)
@@ -17,17 +17,36 @@ class Collider:
             self.size.y
         )
         self.type = type  # Tipo do collider (ex: hitbox, ataque, damage)
-        self.solid = solid  # Define se impede passagem
+        self.active = active  # Define se a colisão será tratada ou não
 
-    def update_position(self, facing_rigt):
-        # print(f"Collider.update_position: collider.rect.x={self.rect.x}, collider.rect.y={self.rect.y}, parent.position.x={self.owner.position.x}, parent.position.y={self.owner.position.y}, parent.rect.x={self.owner.rect.x}, parent.rect.y={self.owner.rect.y}")
-        if not facing_rigt:
-            self.rect.x = self.owner.rect.centerx + self.offset.x
-            self.rect.y = self.owner.rect.centery + self.offset.y
-        else:    
-            self.rect.x = self.owner.rect.centerx + self.offset.x
-            self.rect.y = self.owner.rect.centery + self.offset.y
+    def update_position(self, owner_rect, facing_right=None):
+        offset_x = self.offset[0]
+        offset_y = self.offset[1]
+
+        if facing_right is None:
+            # Ignora espelhamento
+            self.rect.topleft = (
+                owner_rect.x + offset_x,
+                owner_rect.y + offset_y
+            )
+        elif facing_right:
+            self.rect.topleft = (
+                owner_rect.x + offset_x,
+                owner_rect.y + offset_y
+            )
+        else:
+            self.rect.topleft = (
+                owner_rect.right - offset_x - self.size.x,
+                owner_rect.y + offset_y
+            )
+
+            
     
     def draw_debug(self, surface, rect):
-        color = (255, 0, 0) if self.solid else (0, 0, 255)
+        if self.type == 'hurt_box':
+            color = (255, 100, 100)
+        elif self.type == 'attack_box':
+            color = (100, 255, 100) if self.active else (200, 200, 200) 
+        elif self.type == 'body':
+            color = (0, 0, 255)
         pygame.draw.rect(surface, color, rect, 1)

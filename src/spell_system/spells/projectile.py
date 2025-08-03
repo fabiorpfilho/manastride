@@ -15,15 +15,19 @@ class Projectile(Spell):
             position=(0, 0), 
             size=(0, 0), 
             sprite=(0, 255, 0)
+            
         )
+        self.already_hit_targets = set()
         self.add_collider((0, 0), (self.size.x, self.size.y),
-                          type='body', solid=True)
+                          type='body', active=True)
+        self.add_collider((0, 0), (self.size.x, self.size.y),
+                          type='attack_box', active=True)
         self.projectiles = []            # Projéteis já ativos na tela
         self.pending_projectiles = []    # Projéteis esperando o tempo de spawn
         self.marked_for_removal = False
         self.tag = "projectile"
 
-    def execute(self, direction: float):
+    def execute(self, direction: float, owner):
         if not self.validate():
             print(f"Feitiço inválido: {self.name}")
             return
@@ -48,7 +52,8 @@ class Projectile(Spell):
                         "damage": self.attributes["damage"] * 0.6,
                         "effects": effects,
                         "major_rune": "Fan",
-                        "minor_runes": minor_rune_names
+                        "minor_runes": minor_rune_names,
+                        "owner": owner
                     }
                     self.pending_projectiles.append(projectile)
                 # print(f"🌬️ {self.name} dispara leque de projéteis!")
@@ -62,7 +67,8 @@ class Projectile(Spell):
                         "damage": self.attributes["damage"],
                         "effects": effects,
                         "major_rune": "Multiple",
-                        "minor_runes": minor_rune_names
+                        "minor_runes": minor_rune_names,
+                        "owner": owner
                     }
                     self.pending_projectiles.append(projectile)
             elif self.major_rune.name == "Homing":
@@ -74,9 +80,10 @@ class Projectile(Spell):
                     "effects": effects,
                     "homing": True,
                     "major_rune": "Homing",
-                    "minor_runes": minor_rune_names
+                    "minor_runes": minor_rune_names,
+                    "owner": owner
                 }
-                self.projectiles.append(projectile)
+                self.pending_projectiles.append(projectile)
                 # print(f"🎯 {self.name} dispara projétil perseguidor!")
         else:
             # Comportamento padrão
@@ -96,11 +103,10 @@ class Projectile(Spell):
             #     print("🔥 Projétil com efeito de fogo!")
 
     def update(self, delta_time: float, player_pos: tuple):
+        # self.sync_position()
         MAX_DISTANCE = 500
         current_time = pygame.time.get_ticks()
         
-
-
         # Spawn projéteis pendentes
         for pending in self.pending_projectiles[:]:
             if pending.get("spawn_time") is not None:
@@ -141,6 +147,7 @@ class Projectile(Spell):
             #     print(f"🧊 Inimigo atingido por {proj.name} desacelerado!")
             # if "burn" in proj.effects:
             #     print(f"🔥 In System: imigo atingido por {proj.name} queimando!")
+
             
     def _spawn_projectile(self, pending, player_pos):
         """Helper method to spawn a projectile from pending data."""
@@ -152,7 +159,9 @@ class Projectile(Spell):
         projectile.position.y = player_pos[1]
         projectile.size.update(10, 10)
         projectile.add_collider(
-            (0, 0), (10, 10), type='body', solid=True)
+            (0, 0), (10, 10), type='body', active=True)
+        projectile.add_collider(
+            (0, 0), (10, 10), type='attack_box', active=True)
 
         projectile.speed = pending["speed"]
         projectile.damage = pending["damage"]
@@ -162,6 +171,7 @@ class Projectile(Spell):
         projectile.major_rune_name = pending["major_rune"]
         projectile.minor_rune_names = pending["minor_runes"]
         projectile.effects = pending["effects"]
+        projectile.owner = pending.get("owner")
         if "homing" in pending:
             projectile.homing = pending["homing"]
 

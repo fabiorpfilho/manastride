@@ -1,14 +1,13 @@
 from objects.dynamic_objects.character import Character
 from config import SPEED, JUMP_SPEED, GRAVITY
 import pygame
-from objects.animation_type import AnimationType
 from typing import Optional
 from objects.animation_manager import AnimationManager
 
 class Player(Character):
     def __init__(self, position, size, 
                  sprite=(0, 255, 0),invincible=False, health=100, 
-                 attackable=True, damage=10, speed=0, gravity=0, 
+                 attackable=True, damage=10, speed= SPEED, gravity=0, 
                  speed_vector=(0, 0), jump_speed=0):
         
         super().__init__(position, size, sprite, invincible, health,
@@ -24,24 +23,33 @@ class Player(Character):
         self.attack_combo_timeout = 0.5
         self.attack_cooldown = 0.3  # Cooldown entre ataques
         self.attack_cooldown_timer = 0  # Temporizador do cooldown de ataque
-
-        self.animation_speeds = {
-            AnimationType.IDLE1: 0.35,
-            AnimationType.WALK: 0.1,
-            AnimationType.JUMP: 0.1,
-            AnimationType.FALLING: 0.1,
-            AnimationType.CASTING: 0.1,
-            AnimationType.ATTACK1: 0.1,
-            AnimationType.ATTACK2: 0.1,
-            AnimationType.ATTACK3: 0.1
-        }
-
-        self.facing_right = True
-        self.add_collider((0, 0), self.size, type='body', solid=True)
-        self.add_collider((0, 0), self.size, type='hurt_box', solid=True)
+        self.invincibility_duration = 2.0  # segundos de invencibilidade após tomar dano
+        self.invincibility_timer = 0
+        self.flicker_timer = 0
+        self.flicker_interval = 0.1  # tempo entre piscadas
+        self.visible = True  # controla a visibilidade do sprite
         self.spell_cooldown = 0.5
         self.spell_cooldown_timer = 0
+        self.facing_right = True
+        self.already_hit_targets = set()
+
         
+
+        self.animation_speeds = {
+            self.animation_manager.AnimationType.IDLE1: 0.35,
+            self.animation_manager.AnimationType.WALK: 0.1,
+            self.animation_manager.AnimationType.JUMP: 0.1,
+            self.animation_manager.AnimationType.FALLING: 0.1,
+            self.animation_manager.AnimationType.CASTING: 0.1,
+            self.animation_manager.AnimationType.ATTACK1: 0.08,
+            self.animation_manager.AnimationType.ATTACK2: 0.08,
+            self.animation_manager.AnimationType.ATTACK3: 0.08
+        }
+
+        self.add_collider((0, 0), self.size, type='body', active=True)
+        self.add_collider((0, 0), self.size, type='hurt_box', active=True)
+        self.add_collider((20, 0), (15, 30), type='attack_box', active=False)
+
         if self.animation_manager:
             self.animation_manager.load_animations_from_json(
                 self.size,
@@ -50,9 +58,144 @@ class Player(Character):
             )   
             if not self.animation_manager.animationList:
                 print("Erro: Nenhuma animação carregada")
-            self.set_animation(AnimationType.IDLE1)
+            self.set_animation(self.animation_manager.AnimationType.IDLE1)
 
-    def set_animation(self, animation_type: AnimationType):
+    def update(self, delta_time):
+        keys = pygame.key.get_pressed()
+        self.update_timers(delta_time)
+        self.handle_movement(keys, delta_time)
+        self.handle_attack(keys)
+        self.handle_spell_casting(keys)
+        self.apply_gravity(delta_time)
+        self.update_animation(delta_time)
+        self.sync_position()
+        
+    def update_timers(self, delta_time):
+        if self.spell_cooldown_timer > 0:
+            self.spell_cooldown_timer -= delta_time
+        if self.attack_cooldown_timer > 0:
+            self.attack_cooldown_timer -= delta_time
+            
+        if self.attack_combo_timer > 0:
+            self.attack_combo_timer -= delta_time
+            if self.attack_combo_timer <= 0:
+                self.current_attack = None
+                    
+        if self.invincibility_timer > 0:
+            self.invincibility_timer -= delta_time
+            self.flicker_timer -= delta_time
+            if self.flicker_timer <= 0:
+                self.flicker_timer = self.flicker_interval
+                self.visible = not self.visible 
+        else:
+            self.visible = True
+
+    def handle_movement(self, keys, delta_time):
+        if keys[pygame.K_LEFT]:
+            self.speed_vector.x = -self.speed
+            self.facing_right = False
+        elif keys[pygame.K_RIGHT]:
+            self.speed_vector.x = self.speed
+            self.facing_right = True
+        else:
+            self.speed_vector.x *= 0.8
+            if abs(self.speed_vector.x) < 0.1:
+                self.speed_vector.x = 0
+
+        self.position.x += self.speed_vector.x * delta_time
+
+        if keys[pygame.K_SPACE] and self.on_ground:
+            self.speed_vector.y = -(self.jump_speed + JUMP_SPEED)
+            self.on_ground = False
+
+    def handle_attack(self, keys):
+        if keys[pygame.K_z] and not self.is_casting and self.attack_cooldown_timer <= 0:
+            if not self.is_attacking:
+                self.set_animation(self.animation_manager.AnimationType.ATTACK1)
+            elif self.current_attack == self.animation_manager.AnimationType.ATTACK1 and self.attack_combo_timer > 0:
+                self.set_animation(self.animation_manager.AnimationType.ATTACK2)
+            elif self.current_attack == self.animation_manager.AnimationType.ATTACK2 and self.attack_combo_timer > 0:
+                self.set_animation(self.animation_manager.AnimationType.ATTACK3)
+            elif self.current_attack == self.animation_manager.AnimationType.ATTACK3 and self.attack_combo_timer > 0:
+                self.set_animation(self.animation_manager.AnimationType.ATTACK1)
+            self.attack_cooldown_timer = self.attack_cooldown
+
+    def handle_spell_casting(self, keys):
+        key_to_index = {
+            pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3,
+            pygame.K_4: 4, pygame.K_5: 5, pygame.K_6: 6,
+            pygame.K_7: 7, pygame.K_8: 8, pygame.K_9: 9
+        }
+
+        for key, index in key_to_index.items():
+            if keys[key] and self.spell_cooldown_timer <= 0:
+                if hasattr(self, 'spell_system'):
+                    direction = 1 if self.facing_right else -1
+                    self.spell_system.cast_spell(index, direction , self)
+                    self.spell_cooldown_timer = self.spell_cooldown
+                    self.set_animation(self.animation_manager.AnimationType.CASTING)
+
+    def apply_gravity(self, delta_time):
+        g = (self.gravity + GRAVITY)
+        self.position.y += self.speed_vector.y * delta_time + ((g * (delta_time ** 2)) / 2)
+        self.speed_vector.y += g * delta_time
+
+
+    def update_animation(self, delta_time):
+        if not self.animation_manager or not self.current_animation:
+            return
+
+        if self.is_casting or self.is_attacking:
+            self.animation_timer += delta_time
+            animation_speed = self.animation_speeds.get(self.current_animation.type, 0.1)
+            if self.animation_timer >= animation_speed:
+                self.animation_timer -= animation_speed
+                self.current_frame += 1
+                if self.current_frame >= len(self.current_animation.animation):
+                    self.current_frame = 0
+                    self.is_casting = False
+                    self.is_attacking = False
+                    self.colliders[2].active = self.is_attacking  # Desativa o ataque após a animação
+                    if self.current_attack == self.animation_manager.AnimationType.ATTACK3:
+                        self.current_attack = None
+                    self.set_animation(self.animation_manager.AnimationType.IDLE1)
+                else:
+                    # Define os frames de ataque onde a attack_box deve estar ativa
+                    attack_frames = {
+                        self.animation_manager.AnimationType.ATTACK1: [2],  # Frame ativo para ATTACK1
+                        self.animation_manager.AnimationType.ATTACK2: [1],  # Frame ativo para ATTACK2
+                        self.animation_manager.AnimationType.ATTACK3: [2]   # Frame ativo para ATTACK3
+                    }
+                    # Ativa a attack_box apenas nos frames especificados para a animação atual
+                    self.colliders[2].active = (self.is_attacking and 
+                                            self.current_animation.type in attack_frames and 
+                                            self.current_frame in attack_frames[self.current_animation.type])
+                self.update_image()
+            return
+
+        if not self.on_ground:
+            if self.speed_vector.y < 0:
+                self.set_animation(self.animation_manager.AnimationType.JUMP)
+            else:
+                self.set_animation(self.animation_manager.AnimationType.FALLING)
+        else:
+            if abs(self.speed_vector.x) > 0.1:
+                self.set_animation(self.animation_manager.AnimationType.WALK)
+            else:
+                self.set_animation(self.animation_manager.AnimationType.IDLE1)
+
+        self.animation_timer += delta_time
+        animation_speed = self.animation_speeds.get(self.current_animation.type, 0.1)
+        if self.animation_timer >= animation_speed:
+            self.animation_timer -= animation_speed
+            if self.current_animation.type == self.animation_manager.AnimationType.JUMP:
+                self.current_frame = min(self.current_frame + 1, len(self.current_animation.animation) - 1)
+            else:
+                self.current_frame = (self.current_frame + 1) % len(self.current_animation.animation)
+            self.update_image()
+        self.image.set_alpha(255 if self.visible else 0)
+            
+    def set_animation(self, animation_type):
         if not self.animation_manager:
             print("Aviso: Nenhum AnimationManager fornecido")
             return
@@ -62,14 +205,15 @@ class Player(Character):
                     self.current_animation = animation
                     self.current_frame = 0
                     self.animation_timer = 0
-                    if animation_type == AnimationType.CASTING:
+                    if animation_type == self.animation_manager.AnimationType.CASTING:
                         self.is_casting = True
                         self.is_attacking = False
-                    elif animation_type in (AnimationType.ATTACK1, AnimationType.ATTACK2, AnimationType.ATTACK3):
+                    elif animation_type in (self.animation_manager.AnimationType.ATTACK1, self.animation_manager.AnimationType.ATTACK2, self.animation_manager.AnimationType.ATTACK3):
                         self.is_attacking = True
                         self.is_casting = False
                         self.current_attack = animation_type
                         self.attack_combo_timer = self.attack_combo_timeout
+                        self.already_hit_targets.clear()
                     else:
                         self.is_casting = False
                         self.is_attacking = False
@@ -82,7 +226,6 @@ class Player(Character):
     def update_image(self):
         if self.current_animation and self.current_animation.animation:
             sprite = self.current_animation.animation[self.current_frame].image
-            offset_y = self.current_animation.animation[self.current_frame].offset_y
             if not self.facing_right:
                 sprite = pygame.transform.flip(sprite, True, False)
 
@@ -104,127 +247,24 @@ class Player(Character):
             # Atualize a posição do sprite
             self.position.x = self.rect.x
             self.position.y = self.rect.y
-
-            # Debug para verificar o comportamento
-            if self.current_animation.type == AnimationType.ATTACK1:
-                print(f"Current frame: {self.current_frame}")
-                print(f"OFFSET: {offset_y}")
-                print(f"imageRect: {self.rect}")
-                print(f"MIDbottom: {self.rect.midbottom}")
         else:
             print("Aviso: Nenhuma animação disponível, usando sprite padrão")
             self.image.fill(self.sprite)
 
-    def movement_update(self, delta_time):
-        keys = pygame.key.get_pressed()
-
-        # Atualizar cooldowns
-        if self.spell_cooldown_timer > 0:
-            self.spell_cooldown_timer -= delta_time
-        if self.attack_cooldown_timer > 0:
-            self.attack_cooldown_timer -= delta_time
-
-        # Atualizar timer de combo
-        if self.attack_combo_timer > 0:
-            self.attack_combo_timer -= delta_time
-            if self.attack_combo_timer <= 0:
-                self.current_attack = None
-
-        acceleration = (self.speed + SPEED)
-        if keys[pygame.K_LEFT]:
-            self.speed_vector.x = -acceleration
-            self.facing_right = False
-        elif keys[pygame.K_RIGHT]:
-            self.speed_vector.x = acceleration
-            self.facing_right = True
-        else:
-            self.speed_vector.x *= 0.8
-            if abs(self.speed_vector.x) < 0.1:
-                self.speed_vector.x = 0
-
-        self.position.x += self.speed_vector.x * delta_time
-
-        if keys[pygame.K_SPACE] and self.on_ground:
-            self.speed_vector.y += -(self.jump_speed + JUMP_SPEED)
-            self.on_ground = False
-
-        # Ataque corpo a corpo
-        if keys[pygame.K_z] and not self.is_casting and self.attack_cooldown_timer <= 0:
-            if not self.is_attacking:
-                self.set_animation(AnimationType.ATTACK1)
-            elif self.current_attack == AnimationType.ATTACK1 and self.attack_combo_timer > 0:
-                self.set_animation(AnimationType.ATTACK2)
-            elif self.current_attack == AnimationType.ATTACK2 and self.attack_combo_timer > 0:
-                self.set_animation(AnimationType.ATTACK3)
-            elif self.current_attack == AnimationType.ATTACK3 and self.attack_combo_timer > 0:
-                self.set_animation(AnimationType.ATTACK1)
-            self.attack_cooldown_timer = self.attack_cooldown
-
-        key_to_index = {
-            pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3,
-            pygame.K_4: 4, pygame.K_5: 5, pygame.K_6: 6,
-            pygame.K_7: 7, pygame.K_8: 8, pygame.K_9: 9
-        }
-
-        for key, index in key_to_index.items():
-            if keys[key] and self.spell_cooldown_timer <= 0:
-                if hasattr(self, 'spell_system'):
-                    direction = 1 if self.facing_right else -1
-                    self.spell_system.cast_spell(index, direction)
-                    self.spell_cooldown_timer = self.spell_cooldown
-                    self.set_animation(AnimationType.CASTING)
-
-        g = (self.gravity + GRAVITY)
-        self.position.y += self.speed_vector.y * delta_time + ((g * (delta_time ** 2)) / 2)
-        self.speed_vector.y += g * delta_time
-
-        for collider in self.colliders:
-            collider.update_position(self.facing_right)
-
-        self.update_animation(delta_time)
-
-    def update_animation(self, delta_time):
-        if not self.animation_manager or not self.current_animation:
-            return
-
-        if self.is_casting or self.is_attacking:
-            self.animation_timer += delta_time
-            animation_speed = self.animation_speeds.get(self.current_animation.type, 0.1)
-            if self.animation_timer >= animation_speed:
-                self.animation_timer -= animation_speed
-                self.current_frame += 1
-                if self.current_frame >= len(self.current_animation.animation):
-                    self.current_frame = 0
-                    self.is_casting = False
-                    self.is_attacking = False
-                    if self.current_attack == AnimationType.ATTACK3:
-                        self.current_attack = None
-                    self.set_animation(AnimationType.IDLE1)
-                self.update_image()
-            return
-
-        if not self.on_ground:
-            if self.speed_vector.y < 0:
-                self.set_animation(AnimationType.JUMP)
-            else:
-                self.set_animation(AnimationType.FALLING)
-        else:
-            if abs(self.speed_vector.x) > 0.1:
-                self.set_animation(AnimationType.WALK)
-            else:
-                self.set_animation(AnimationType.IDLE1)
-
-        self.animation_timer += delta_time
-        animation_speed = self.animation_speeds.get(self.current_animation.type, 0.1)
-        if self.animation_timer >= animation_speed:
-            self.animation_timer -= animation_speed
-            if self.current_animation.type == AnimationType.JUMP:
-                self.current_frame = min(self.current_frame + 1, len(self.current_animation.animation) - 1)
-            else:
-                self.current_frame = (self.current_frame + 1) % len(self.current_animation.animation)
-            self.update_image()
 
     def handle_damage(self, enemy_damage):
-        # print(f"Sofreu dano! {enemy_damage}")
-        pass
+        if self.invincibility_timer > 0:
+            return  # já está invencível
 
+        self.health -= enemy_damage
+        print(f"Sofreu dano! Vida restante: {self.health}")
+
+        self.invincibility_timer = self.invincibility_duration
+        self.flicker_timer = self.flicker_interval
+        self.visible = False
+
+        # Knockback leve
+        knockback_strength = 300  # ajuste conforme necessário
+        direction = -1 if self.facing_right else 1
+        self.speed_vector.x = direction * knockback_strength
+        self.speed_vector.y = -100  # empurrado levemente para cima também

@@ -19,15 +19,10 @@ class CollisionManager:
             obj.marked_for_removal = True
 
     def _handle_collisions(self, dynamic_object, objects_to_remove):
-        # Atualiza posição do rect principal e dos colliders
-        dynamic_object.rect.topleft = dynamic_object.position
         for dynamic_collider in dynamic_object.colliders:
-            dynamic_collider.rect.topleft = (
-                dynamic_object.rect.x + dynamic_collider.offset.x,
-                dynamic_object.rect.y + dynamic_collider.offset.y
-            )
+            if not dynamic_collider.active:
+                continue
 
-        for dynamic_collider in dynamic_object.colliders:
             self._handle_collider_collisions(dynamic_object, dynamic_collider, objects_to_remove)
 
     def _handle_collider_collisions(self, dynamic_object, dynamic_collider, objects_to_remove):
@@ -43,6 +38,7 @@ class CollisionManager:
                 if dynamic_collider.rect.colliderect(static_collider.rect):
 
                     if dynamic_object.tag == "projectile":
+                        print(f"Projétil {dynamic_object.name} colidiu com {static}!")
                         objects_to_remove.append(dynamic_object)
                         return
 
@@ -52,41 +48,55 @@ class CollisionManager:
 
                     if largura_invasao < altura_invasao:
                         if dynamic_object.rect.centerx < static_collider.rect.centerx:
-                            dynamic_object.position.x -= largura_invasao + dynamic_collider.offset.x
+                            dynamic_object.position.x -= largura_invasao + dynamic_collider.offset[0]
                             if "npc" in dynamic_object.tag:
                                 dynamic_object.facing_right = False
                         else:
-                            dynamic_object.position.x += largura_invasao + dynamic_collider.offset.x
+                            dynamic_object.position.x += largura_invasao + dynamic_collider.offset[0]
                             if "npc" in dynamic_object.tag:
                                 dynamic_object.facing_right = True
                         dynamic_object.speed_vector.x = 0
                     else:
                         if dynamic_object.rect.centery < static_collider.rect.centery:
-                            dynamic_object.position.y -= altura_invasao + dynamic_collider.offset.y
+                            dynamic_object.position.y -= altura_invasao + dynamic_collider.offset[1]
                             dynamic_object.speed_vector.y = 0
                             ground_collision_detected = True
                         else:
-                            dynamic_object.position.y += altura_invasao + dynamic_collider.offset.y
+                            dynamic_object.position.y += altura_invasao + dynamic_collider.offset[1]
                             dynamic_object.speed_vector.y = 0
 
-                    dynamic_object.rect.topleft = dynamic_object.position
-                    for dc in dynamic_object.colliders:
-                        dc.rect.topleft = (
-                            dynamic_object.rect.x + dc.offset.x,
-                            dynamic_object.rect.y + dc.offset.y
-                        )
+                    dynamic_object.sync_position()
+
 
         self._detect_is_on_ground(ground_collision_detected, dynamic_object)
 
     def _handle_hurt_collision(self, dynamic_object, hurt_collider):
         for other_object in self.dynamic_objects:
+
             if other_object is dynamic_object:
                 continue
 
+            if other_object.tag == "projectile" and other_object.owner == dynamic_object:
+                return
             for other_collider in other_object.colliders:
-                if other_collider.type == "attack_box" and hurt_collider.rect.colliderect(other_collider.rect):
+
+                if (
+                    other_collider.type == "attack_box"
+                    and hurt_collider.rect.colliderect(other_collider.rect)
+                    and other_collider.active
+                ):
+
+                    # Só cause dano se o alvo ainda não foi atingido neste ataque
+                    if hasattr(other_object, "already_hit_targets"):
+                        if dynamic_object in other_object.already_hit_targets:
+                            continue
+                        other_object.already_hit_targets.add(dynamic_object)
+
                     dynamic_object.handle_damage(other_object.damage)
+                    if other_object.tag == "projectile":
+                        other_object.marked_for_removal = True
                     return
+
 
     def _detect_is_on_ground(self, ground_collision_detected, dynamic_object):
         if ground_collision_detected:

@@ -6,8 +6,10 @@ import pygame
 import json
 
 class AnimationManager:
+    AnimationType = AnimationType
     def __init__(self, animationList=None):
         self.animationList = animationList if animationList is not None else []
+        
 
     def load_sprites_from_folder(self, folder_path, animation_type: AnimationType):
         """Carrega sprites de uma pasta e cria uma animação, adicionando-a à lista."""

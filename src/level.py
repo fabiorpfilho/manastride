@@ -24,6 +24,8 @@ class Level:
         self.background = [0, 0, 0]
         self.background_layers = []
         self.tile_size = 24 
+        self.score = 0  # Initialize score
+        self.font = pygame.font.SysFont('arial', 24)  # Font for score display
         
         self.spell_system = SpellSystem()
         self.asset_loader = AssetLoader()
@@ -43,7 +45,7 @@ class Level:
         world_width = self.map_width * self.tile_width
         world_height = self.map_height * self.tile_height
         self.camera = Camera(screen.get_size(), world_width,
-                             world_height, zoom=3.0)
+                             world_height, zoom=4.0)
 
         
         # Carregar o tileset
@@ -54,16 +56,20 @@ class Level:
             camera_zoom=self.camera.zoom
         )
         
-        self.player = Player((100, 300), (20, 30),)
-        self.enemy = HammerBot((300, 300), (22, 31))
-        
-        self.all_sprites += [self.player, self.enemy]
-        self.player.spell_system = self.spell_system 
         
         # Processar a camada de blocos
+        
+        self.player = Player((100, 300), (20, 30))
+        self.player.spell_system = self.spell_system 
+        
+        self.enemies = [HammerBot((300, 300), (22, 31))]
+        
+        self.dynamic_objects = [self.player] + self.enemies
+        self.all_sprites += self.dynamic_objects
+
+        
         self._process_tilemap()
             
-        self.dynamic_objects = [self.player, self.enemy]
         self.collision_manager = CollisionManager(self.dynamic_objects, self.platforms, world_width)
 
 
@@ -123,24 +129,46 @@ class Level:
         for spell in self.spell_system.spellbook:
             spell.draw(self.screen, self.camera)
 
-        # self.player.draw_colliders_debug(self.screen, self.camera)
-        self.enemy.draw_colliders_debug(self.screen, self.camera)
-        self.enemy.draw_sensors_debug(self.screen, self.camera)
+        self.player.draw_colliders_debug(self.screen, self.camera)
+        
+        for enemy in self.enemies:
+            enemy.draw_colliders_debug(self.screen, self.camera)
+            enemy.draw_sensors_debug(self.screen, self.camera)
+            
+            
+        score_text = self.font.render(f'Pontuação: {self.score}', True, (255, 255, 255))
+        score_rect = score_text.get_rect(topright=(screen_width - 10, 10))
+        self.screen.blit(score_text, score_rect)
+
         # for platform in self.platforms:
         #     platform.draw_colliders_debug(self.screen, self.camera)
                 # Debug do player e inimigo
 
     def update(self, delta_time):
+        if self.player.health <= 0:
+            self.reset()
         # Limitar delta_time para evitar picos
         # print(f"Delta time: {delta_time}")  # Debug
 
-        self.player.movement_update(delta_time)
-        self.enemy.movement_update(delta_time, self.platforms)
+        self.player.update(delta_time)
+        # Atualizar inimigos
+        for enemy in self.enemies[:]:  # cópia da lista para remover com segurança
+            if enemy.marked_for_removal:
+                self.score += 100  
+                self.dynamic_objects.remove(enemy)
+                self.all_sprites.remove(enemy)
+                self.enemies.remove(enemy)
+            else:
+                enemy.update(delta_time, self.platforms)
+
+                
         player_pos = [self.player.position.x + self.player.size[0] / 2, 
                       self.player.position.y + self.player.size[1] / 2]
 
         for spell in self.spell_system.spellbook:
+            spell.update(delta_time, player_pos)
             for proj in spell.projectiles:
+                proj.sync_position(proj.direction)
                 if proj not in self.dynamic_objects:
                     self.dynamic_objects.append(proj)
 
@@ -153,11 +181,29 @@ class Level:
         for layer in self.background_layers:
             layer['offset_x'] = -self.camera.offset.x * layer['parallax_factor']
             layer['offset_y'] = -self.camera.offset.y * layer['parallax_factor']
-    
-        for spell in self.spell_system.spellbook:
-            spell.update(delta_time, player_pos)
 
-        self.dynamic_objects = [
-            obj for obj in self.dynamic_objects
-            if not getattr(obj, "marked_for_removal", False)
-        ]
+
+    def reset(self):
+        # Resetar o jogador
+        self.player = Player((100, 300), (20, 30))
+        self.player.spell_system = self.spell_system
+
+        # Resetar o inimigo
+        self.enemies = [HammerBot((300, 300), (22, 31))]
+        self.dynamic_objects = [self.player] + self.enemies
+        self.all_sprites = self.platforms + self.dynamic_objects
+
+        self.score = 0
+        # Limpar feitiços ativos
+        self.spell_system.spellbook.clear()
+
+        # Limpar objetos dinâmicos
+
+        # Resetar lista de sprites
+
+        # Resetar câmera
+        self.camera.target = self.player
+        self.camera.offset = Vector2(0, 0)
+
+        # Resetar colisores
+        self.collision_manager = CollisionManager(self.dynamic_objects, self.platforms, self.map_width * self.tile_width)

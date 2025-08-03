@@ -1,7 +1,6 @@
 from objects.dynamic_objects.character import Character
 from config import SPEED, GRAVITY
 import pygame
-from objects.animation_type import AnimationType
 from typing import Optional
 from objects.animation_manager import AnimationManager
 import json
@@ -9,7 +8,7 @@ import json
 class HammerBot(Character):
     def __init__(self, position, size,
                  sprite=(0, 255, 0),  invincible=False, health=100, 
-                 attackable=True, damage=20, speed= SPEED - 160, gravity=0, 
+                 attackable=True, damage=20, speed= SPEED - 120 , gravity=0, 
                  speed_vector=(0, 0), jump_speed=0):
         
         super().__init__(position, size, sprite, invincible, health,
@@ -20,16 +19,19 @@ class HammerBot(Character):
         self.animation_timer = 0
         self.is_attacking = False
         self.attack_cooldown = 0.3
+        self.marked_for_removal = False  # Para remoção após morte
+        self.is_dying = False  # Flag para controle de animação de morte
         self.animation_speeds = {
-            AnimationType.IDLE1: 0.35,
-            AnimationType.WALK: 0.1,
-            AnimationType.ATTACK1: 0.1,
-            AnimationType.DEATH: 0.15,
+            self.animation_manager.AnimationType.IDLE1: 0.35,
+            self.animation_manager.AnimationType.WALK: 0.1,
+            self.animation_manager.AnimationType.ATTACK1: 0.1,
+            self.animation_manager.AnimationType.DEATH: 0.15,
+            self.animation_manager.AnimationType.HURT: 0.1,
         }
         self.facing_right = True
-        self.add_collider((0, 0), self.size, type='body', solid=True)
-        self.add_collider((0, 0), self.size, type='hurt_box', solid=True)
-        self.add_collider((0, 0), self.size, type='attack_box', solid=True)
+        self.add_collider((0, 0), self.size, type='body', active=True)
+        self.add_collider((0, 0), self.size, type='hurt_box', active=True)
+        self.add_collider((0, 0), self.size, type='attack_box', active=True)
         
         # Edge detection sensors (relative to character position)
         self.left_sensor_offset = (-10, self.size[1] + 5)  # Slightly outside left bottom
@@ -44,32 +46,7 @@ class HammerBot(Character):
             if not self.animation_manager.animationList:
                 print("Erro: Nenhuma animação carregada")
             else:
-                self.set_animation(AnimationType.IDLE1)
-
-    def set_animation(self, animation_type: AnimationType):
-        if not self.animation_manager:
-            print("Aviso: Nenhum AnimationManager fornecido")
-            return
-        for animation in self.animation_manager.animationList:
-            if animation.type == animation_type:
-                if self.current_animation != animation:
-                    self.current_animation = animation
-                    self.current_frame = 0
-                    self.animation_timer = 0
-                    self.is_attacking = (animation_type == AnimationType.ATTACK1)
-                    self.update_image()
-                return
-        print(f"Aviso: Animação {animation_type} não encontrada")
-
-    def update_image(self):
-        if self.current_animation and self.current_animation.animation:
-            sprite = self.current_animation.animation[self.current_frame].image
-            if not self.facing_right:
-                sprite = pygame.transform.flip(sprite, True, False)
-            self.image = sprite
-            self.rect = self.image.get_rect(topleft=(self.position.x, self.position.y))
-        else:
-            self.image.fill(self.sprite)
+                self.set_animation(self.animation_manager.AnimationType.IDLE1)
 
     def check_edge(self, platforms):
         """Check if there's a platform below the edge sensors"""
@@ -97,7 +74,7 @@ class HammerBot(Character):
                 
         return left_has_platform, right_has_platform
 
-    def movement_update(self, delta_time, platforms):
+    def update(self, delta_time, platforms):
         # Apply gravity
         g = (self.gravity + GRAVITY)
         self.position.y += self.speed_vector.y * delta_time + ((g * (delta_time ** 2)) / 2)
@@ -115,17 +92,27 @@ class HammerBot(Character):
             self.speed_vector.x = -self.speed_vector.x
         
         # Update position   
-        self.position.x += self.speed_vector.x * delta_time
+        if not self.is_dying:
+            self.position.x += self.speed_vector.x * delta_time
 
-        # Update colliders
-        for collider in self.colliders:
-            collider.update_position(self.facing_right)
 
         self.update_animation(delta_time)
-        self.rect.topleft = self.position
+        self.sync_position()
 
     def update_animation(self, delta_time):
         if not self.animation_manager or not self.current_animation:
+            return
+        if self.is_dying:
+            self.animation_timer += delta_time
+            animation_speed = self.animation_speeds.get(self.animation_manager.AnimationType.DEATH, 0.1)
+            if self.animation_timer >= animation_speed:
+                self.animation_timer -= animation_speed
+                self.current_frame += 1
+                if self.current_frame >= len(self.current_animation.animation):
+                    self.marked_for_removal = True
+                    self.is_dying = False
+                else:
+                    self.update_image()
             return
 
         if self.is_attacking:
@@ -137,24 +124,49 @@ class HammerBot(Character):
                 if self.current_frame >= len(self.current_animation.animation):
                     self.current_frame = 0
                     self.is_attacking = False
-                    self.set_animation(AnimationType.IDLE1)
+                    self.set_animation(self.animation_manager.AnimationType.IDLE1)
                 self.update_image()
             return
         else:
             if abs(self.speed_vector.x) > 0.1:
-                self.set_animation(AnimationType.WALK)
+                self.set_animation(self.animation_manager.AnimationType.WALK)
             else:
-                self.set_animation(AnimationType.IDLE1)
+                self.set_animation(self.animation_manager.AnimationType.IDLE1)
 
         self.animation_timer += delta_time
         animation_speed = self.animation_speeds.get(self.current_animation.type, 0.1)
         if self.animation_timer >= animation_speed:
             self.animation_timer -= animation_speed
-            if self.current_animation.type == AnimationType.JUMP:
+            if self.current_animation.type == self.animation_manager.AnimationType.JUMP:
                 self.current_frame = min(self.current_frame + 1, len(self.current_animation.animation) - 1)
             else:
                 self.current_frame = (self.current_frame + 1) % len(self.current_animation.animation)
             self.update_image()
+            
+    def set_animation(self, animation_type):
+        if not self.animation_manager:
+            print("Aviso: Nenhum AnimationManager fornecido")
+            return
+        for animation in self.animation_manager.animationList:
+            if animation.type == animation_type:
+                if self.current_animation != animation:
+                    self.current_animation = animation
+                    self.current_frame = 0
+                    self.animation_timer = 0
+                    self.is_attacking = (animation_type == self.animation_manager.AnimationType.ATTACK1)
+                    self.update_image()
+                return
+        print(f"Aviso: Animação {animation_type} não encontrada")
+
+    def update_image(self):
+        if self.current_animation and self.current_animation.animation:
+            sprite = self.current_animation.animation[self.current_frame].image
+            if not self.facing_right:
+                sprite = pygame.transform.flip(sprite, True, False)
+            self.image = sprite
+            self.rect = self.image.get_rect(topleft=(self.position.x, self.position.y))
+        else:
+            self.image.fill(self.sprite)
             
             
     def draw_sensors_debug(self, screen, camera):
@@ -178,5 +190,17 @@ class HammerBot(Character):
         pygame.draw.rect(screen, (255, 0, 0), left_sensor_screen, 0)  # Filled red rectangle
         pygame.draw.rect(screen, (0, 0, 255), right_sensor_screen, 0)  # Filled blue 
     
-    def handle_damage(enemy_damage):
-        pass
+    def handle_damage(self, enemy_damage):
+        if self.health <= 0:
+            return  # Já morreu, ignora
+
+        self.health -= enemy_damage
+        print(f"HammerBot sofreu {enemy_damage} de dano. Vida restante: {self.health}")
+
+        if self.health <= 0:
+            self.set_animation(self.animation_manager.AnimationType.DEATH)
+            self.marked_for_removal = False  # Só será marcado quando a animação terminar
+            self.is_dying = True  # Flag opcional para controle
+        else:
+            self.set_animation(self.animation_manager.AnimationType.HURT)
+            self.is_attacking = False  # Interrompe ataque se necessário

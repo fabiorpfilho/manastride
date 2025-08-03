@@ -14,8 +14,8 @@ class Object:
         self.rect = self.image.get_rect(
             topleft=(self.position.x, self.position.y))
         
-    def add_collider(self, offset, size, type, solid):
-        collider = Collider(self, offset, size, type, solid)
+    def add_collider(self, offset, size, type, active):
+        collider = Collider(self, offset, size, type, active)
         self.colliders.append(collider)
 
     def draw_colliders_debug(self, surface, camera):
