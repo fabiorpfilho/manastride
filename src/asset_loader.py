@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 
 
 class AssetLoader:
-    def __init__(self, base_path="src/levels"):
+    def __init__(self, base_path="assets/maps"):
         self.base_path = base_path
 
     def load_map_data(self, level_name):
@@ -79,3 +79,12 @@ class AssetLoader:
                 continue
 
         return background_layers
+
+    def load_image(self, path):
+        """Carrega uma imagem de um caminho específico e retorna a superfície do Pygame."""
+        full_path = os.path.join(path)
+        try:
+            return pygame.image.load(full_path).convert_alpha()
+        except FileNotFoundError:
+            print(f"Erro: Imagem não encontrada em {full_path}")
+            return pygame.Surface((0, 0), pygame.SRCALPHA)  # Retorna uma superfície vazia

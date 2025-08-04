@@ -3,6 +3,8 @@ import json
 import xml.etree.ElementTree as ET
 import os
 from objects.static_objects.terrain import Terrain
+from objects.static_objects.door import Door
+from objects.static_objects.rune import Rune
 from objects.dynamic_objects.player import Player
 from objects.dynamic_objects.hammer_bot import HammerBot
 from collision_manager import CollisionManager
@@ -20,7 +22,10 @@ class Level:
     def __init__(self, screen, level_name):
         self.screen = screen
         self.all_sprites = []
-        self.platforms = []
+        self.player = None
+        self.enemies = []
+        self.dynamic_objects = []
+        self.static_objects = []
         self.background = [0, 0, 0]
         self.background_layers = []
         self.tile_size = 24 
@@ -59,19 +64,51 @@ class Level:
         
         # Processar a camada de blocos
         
-        self.player = Player((100, 300), (20, 30))
-        self.player.spell_system = self.spell_system 
-        
-        self.enemies = [HammerBot((300, 300), (22, 31))]
-        
-        self.dynamic_objects = [self.player] + self.enemies
+        self._process_objects()  # Novo método para spawnar objetos do mapa
+
         self.all_sprites += self.dynamic_objects
+
 
         
         self._process_tilemap()
             
-        self.collision_manager = CollisionManager(self.dynamic_objects, self.platforms, world_width)
+        self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, world_width)
 
+    def _process_objects(self):
+        """Processa a camada de objetos do mapa (player, inimigos, runas, portas etc)."""
+        object_group = self.map_data.find("objectgroup[@name='objects']")
+        if object_group is None:
+            return
+
+        for obj in object_group.findall("object"):
+            name = obj.get("name")
+            type_ = obj.get("type")
+            x = float(obj.get("x", 0))
+            y = float(obj.get("y", 0))
+            height = float(obj.get("height", 0))
+            width = float(obj.get("width", 0))
+            position = (x, y)
+            size = (width, height)
+
+            if type_ == "spawn":
+                if name == "player":
+                    self.player = Player(position, size)
+                    self.player.spell_system = self.spell_system
+                    self.dynamic_objects.append(self.player)
+                elif name == "hammer_bot":
+                    enemy = HammerBot(position, size)
+                    self.enemies.append(enemy)
+                    self.dynamic_objects.append(enemy)
+            elif type_ == "rune":
+                image = self.asset_loader.load_image(f"assets/runes/asset32x32/{name}.png")
+                rune = Rune(position, size, name, image, "major", 10)
+                self.static_objects.append(rune)  # ou outra lista se quiser isolar portas
+                self.all_sprites.append(rune)  # apenas para debug, se desejar
+                print(f"Rune '{name}' at {position} - ainda não implementado")
+            elif type_ == "door":
+                door = Door(position, size, name)
+                self.static_objects.append(door)  # ou outra lista se quiser isolar portas
+                self.all_sprites.append(door)  # apenas para debug, se desejar
 
     def _process_tilemap(self):
         """Processa a camada de blocos do mapa Tiled."""
@@ -95,7 +132,7 @@ class Level:
                             image=self.tileset[gid]
                         )
                         self.all_sprites.append(platform)
-                        self.platforms.append(platform)
+                        self.static_objects.append(platform)
                         # print(f"Plataforma adicionada: <rect({x}, {y}, {self.tile_width}, {self.tile_height})>")
 
     def draw(self):
@@ -140,7 +177,7 @@ class Level:
         score_rect = score_text.get_rect(topright=(screen_width - 10, 10))
         self.screen.blit(score_text, score_rect)
 
-        # for platform in self.platforms:
+        # for platform in self.static_objects:
         #     platform.draw_colliders_debug(self.screen, self.camera)
                 # Debug do player e inimigo
 
@@ -159,7 +196,7 @@ class Level:
                 self.all_sprites.remove(enemy)
                 self.enemies.remove(enemy)
             else:
-                enemy.update(delta_time, self.platforms)
+                enemy.update(delta_time, self.static_objects)
 
                 
         player_pos = [self.player.position.x + self.player.size[0] / 2, 
@@ -175,6 +212,11 @@ class Level:
         #     print(f"Lista de spell no update: {spell.projectiles}")
         # print(f"Dynamic objects: {self.dynamic_objects}")
         self.collision_manager.update(self.dynamic_objects)
+        
+        if self.collision_manager.door_triggered:
+            new_map = self.collision_manager.door_triggered
+            self._load_new_map(new_map)
+            return  # parar o update aqui pois o mapa foi trocado
         self.camera.update(self.player)   
         
         # Atualizar os offsets do fundo com base no movimento da câmera
@@ -191,7 +233,7 @@ class Level:
         # Resetar o inimigo
         self.enemies = [HammerBot((300, 300), (22, 31))]
         self.dynamic_objects = [self.player] + self.enemies
-        self.all_sprites = self.platforms + self.dynamic_objects
+        self.all_sprites = self.static_objects + self.dynamic_objects
 
         self.score = 0
         # Limpar feitiços ativos
@@ -206,4 +248,25 @@ class Level:
         self.camera.offset = Vector2(0, 0)
 
         # Resetar colisores
-        self.collision_manager = CollisionManager(self.dynamic_objects, self.platforms, self.map_width * self.tile_width)
+        self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, self.map_width * self.tile_width)
+
+    def _load_new_map(self, level_name):
+        print(f"Trocando para o mapa: {level_name}")
+
+        # Salvar dados importantes
+        saved_score = self.score
+        saved_spellbook = self.spell_system.spellbook.copy()
+        # Salvar estado do player
+        saved_health = self.player.health
+
+        # Recarrega tudo (vai sobrescrever self.player)
+        self.__init__(self.screen, level_name)
+
+        # Restaurar dados
+        self.score = saved_score
+        self.spell_system.spellbook = saved_spellbook
+
+        # Restaurar estado do novo player
+        if self.player:
+            self.player.health = saved_health
+            self.player.sync_position()

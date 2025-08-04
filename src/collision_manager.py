@@ -5,6 +5,8 @@ class CollisionManager:
         self.dynamic_objects = dynamic_objects
         self.static_objects = static_objects
         self.world_width = world_width
+        self.door_triggered = None 
+
 
     def update(self, dynamic_objects):
         objects_to_remove = []
@@ -36,6 +38,9 @@ class CollisionManager:
         for static in self.static_objects:
             for static_collider in static.colliders:
                 if dynamic_collider.rect.colliderect(static_collider.rect):
+                    if static_collider.type == "door" and dynamic_object.tag == "player":
+                        self.door_triggered = static.target_map
+                        continue
 
                     if dynamic_object.tag == "projectile":
                         print(f"Projétil {dynamic_object.name} colidiu com {static}!")
