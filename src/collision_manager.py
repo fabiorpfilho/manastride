@@ -96,6 +96,8 @@ class CollisionManager:
                         if dynamic_object in other_object.already_hit_targets:
                             continue
                         other_object.already_hit_targets.add(dynamic_object)
+                        if other_object.tag == "player" or other_object.tag == "projectile":
+                            other_object.handle_hit()
 
                     dynamic_object.handle_damage(other_object.damage)
                     if other_object.tag == "projectile":

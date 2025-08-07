@@ -71,8 +71,30 @@ class Level:
 
         
         self._process_tilemap()
+        self._load_music(level_name)
             
         self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, world_width)
+        
+
+    def _load_music(self, level_name):
+        # Caminho principal baseado no nome do level
+        music_path = f"assets/audio/soundtrack/{level_name}_theme.ogg"
+        fallback_path = "assets/audio/soundtrack/level_1_theme.ogg"
+
+        try:
+            pygame.mixer.music.load(music_path)
+            print(f"🎵 Música carregada: {music_path}")
+        except Exception as e:
+            print(f"⚠️ Erro ao carregar '{music_path}': {e}")
+            try:
+                pygame.mixer.music.load(fallback_path)
+                print(f"🎵 Música padrão carregada: {fallback_path}")
+            except Exception as fallback_error:
+                print(f"❌ Erro ao carregar música padrão '{fallback_path}': {fallback_error}")
+                return  # Se nem a padrão carregar, apenas sai
+
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
 
     def _process_objects(self):
         """Processa a camada de objetos do mapa (player, inimigos, runas, portas etc)."""

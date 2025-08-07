@@ -3,23 +3,43 @@ from spell_system.rune_type import RuneType
 from spell_system.spell import Spell
 from typing import List
 from spell_system.spells.projectile import Projectile
+import pygame
 
 class SpellSystem:
     def __init__(self):
         self.runes: List[Rune] = self.create_runes()         # Runas disponíveis no sistema
         self.spellbook: List[Spell] = []     # Feitiços conhecidos ou salvos
+
+        self.fireball_sfx = [
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Fireball 1.ogg"),
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Fireball 2.ogg"),
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Fireball 3.ogg"),
+        ]
+        self.icebolt_sfx = [
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Ice Barrage 1.ogg"),
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Ice Barrage 2.ogg"),
+        ]
+        self.spell_hit_sfx = [
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Spell Impact 1.ogg"),
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Spell Impact 2.ogg"),
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Spell Impact 3.ogg"),
+        ]
         self.setup_default_spells()
         
     def setup_default_spells(self):
         ice_spell = Projectile(
             major_rune=self.runes[2],
-            minor_runes=[self.runes[3]]
+            minor_runes=[self.runes[3]],
+            spell_sfx=self.icebolt_sfx,
+            spell_hit_sfx=self.spell_hit_sfx
         )
+        print("Hit: ", self.spell_hit_sfx)
         fan_spell = Projectile(
             major_rune=self.runes[0],
-            minor_runes=[self.runes[4]]
+            minor_runes=[self.runes[4]],
+            spell_sfx=self.fireball_sfx,
+            spell_hit_sfx=self.spell_hit_sfx
         )
-
         self.spellbook.append(ice_spell)
         self.spellbook.append(fan_spell)
 

@@ -11,6 +11,7 @@ from config import DELTA_TIME
 class GameController:
     def __init__(self, width=1600, height=900, title="Teste de Execução"):
         pygame.init()
+        pygame.mixer.init()
         self.width = width
         self.height = height
         self.screen = pygame.display.set_mode((self.width, self.height))

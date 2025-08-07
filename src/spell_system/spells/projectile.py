@@ -4,9 +4,12 @@ from typing import List, Optional
 import pygame 
 from config import SPEED
 import math
+import random
 
 class Projectile(Spell):
-    def __init__(self, major_rune: Optional[Rune] = None, minor_runes: List[Rune] = None):
+    def __init__(self, major_rune: Optional[Rune] = None, minor_runes: List[Rune] = None,
+                    spell_sfx: List[pygame.mixer.Sound] = None,
+                    spell_hit_sfx: List[pygame.mixer.Sound] = None):
         super().__init__(
             name="Projectile",
             base_attributes={"damage": 10, "speed": 300, "mana_cost": 20},
@@ -26,6 +29,11 @@ class Projectile(Spell):
         self.pending_projectiles = []    # Projéteis esperando o tempo de spawn
         self.marked_for_removal = False
         self.tag = "projectile"
+        print("Ataque: ", spell_sfx)
+        print("Som: ", spell_hit_sfx )
+        self.spell_sfx = spell_sfx or []
+        self.spell_hit_sfx = spell_hit_sfx or []
+
 
     def execute(self, direction: float, owner):
         if not self.validate():
@@ -36,6 +44,8 @@ class Projectile(Spell):
         effects = {k: v for k, v in self.attributes.items() if k in [
             "slow", "burn"]}
         minor_rune_names = [rune.name for rune in self.minor_runes]
+        print("Tocando som: ", self.spell_sfx)
+        random.choice(self.spell_sfx).play()
 
         if self.major_rune:
             # Executa comportamento baseado no nome da runa maior
@@ -114,6 +124,7 @@ class Projectile(Spell):
                     self._spawn_projectile(pending, player_pos)
             else:
                 self._spawn_projectile(pending, player_pos)
+            
             
             
         # Atualizar projéteis ativos
@@ -212,3 +223,10 @@ class Projectile(Spell):
                 pygame.draw.polygon(surface, color, points)
             else:  # Default
                 pygame.draw.circle(surface, color, screen_pos, 5 * camera.zoom)
+
+    
+    
+    def handle_hit(self):
+        print("Acertou o feitiço")
+        print(self.spell_hit_sfx)
+        # random.choice(self.spell_hit_sfx).play()

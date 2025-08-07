@@ -199,6 +199,7 @@ class HammerBot(Character):
 
         if self.health <= 0:
             self.set_animation(self.animation_manager.AnimationType.DEATH)
+            self.colliders[2].active = False
             self.marked_for_removal = False  # Só será marcado quando a animação terminar
             self.is_dying = True  # Flag opcional para controle
         else:

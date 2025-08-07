@@ -16,21 +16,43 @@ class Player(Character):
         self.current_animation = None
         self.current_frame = 0
         self.animation_timer = 0
-        self.is_casting = False
+
+
+        self.attack_sfx = {
+            self.animation_manager.AnimationType.ATTACK1: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Attack 1.ogg"),
+            self.animation_manager.AnimationType.ATTACK2: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Attack 2.ogg"),
+            self.animation_manager.AnimationType.ATTACK3: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Attack 3.ogg"),
+        }
+        self.attack_hit_sfx = {
+            self.animation_manager.AnimationType.ATTACK1: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Impact Hit 1.ogg"),
+            self.animation_manager.AnimationType.ATTACK2: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Impact Hit 2.ogg"),
+            self.animation_manager.AnimationType.ATTACK3: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Impact Hit 3.ogg"),
+        }
+
+        # self.attack_hit_sfx = {
+        #     self.animation_manager.AnimationType.ATTACK1: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Parry 1.ogg"),
+        #     self.animation_manager.AnimationType.ATTACK2: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Parry 2.ogg"),
+        #     self.animation_manager.AnimationType.ATTACK3: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Parry 3.ogg"),
+        # }
+
         self.is_attacking = False
         self.current_attack = None
-        self.attack_combo_timer = 5
-        self.attack_combo_timeout = 0.5
-        self.attack_cooldown = 0.3  # Cooldown entre ataques
+        self.attack_combo_timer = 20
+        self.attack_combo_timeout = 3.2
+        self.attack_cooldown = 0.6  # Cooldown entre ataques
         self.attack_cooldown_timer = 0  # Temporizador do cooldown de ataque
+
         self.invincibility_duration = 2.0  # segundos de invencibilidade após tomar dano
         self.invincibility_timer = 0
         self.flicker_timer = 0
         self.flicker_interval = 0.1  # tempo entre piscadas
         self.visible = True  # controla a visibilidade do sprite
+
+        self.is_casting = False
         self.spell_cooldown = 0.5
         self.spell_cooldown_timer = 0
         self.facing_right = True
+    
         self.already_hit_targets = set()
 
         
@@ -156,8 +178,6 @@ class Player(Character):
                     self.is_casting = False
                     self.is_attacking = False
                     self.colliders[2].active = self.is_attacking  # Desativa o ataque após a animação
-                    if self.current_attack == self.animation_manager.AnimationType.ATTACK3:
-                        self.current_attack = None
                     self.set_animation(self.animation_manager.AnimationType.IDLE1)
                 else:
                     # Define os frames de ataque onde a attack_box deve estar ativa
@@ -167,9 +187,11 @@ class Player(Character):
                         self.animation_manager.AnimationType.ATTACK3: [2]   # Frame ativo para ATTACK3
                     }
                     # Ativa a attack_box apenas nos frames especificados para a animação atual
-                    self.colliders[2].active = (self.is_attacking and 
-                                            self.current_animation.type in attack_frames and 
-                                            self.current_frame in attack_frames[self.current_animation.type])
+                    self.colliders[2].active = (
+                        self.is_attacking and 
+                        self.current_animation.type in attack_frames and 
+                        self.current_frame >= attack_frames[self.current_animation.type][0]
+)
                 self.update_image()
             return
 
@@ -212,8 +234,12 @@ class Player(Character):
                         self.is_attacking = True
                         self.is_casting = False
                         self.current_attack = animation_type
-                        self.attack_combo_timer = self.attack_combo_timeout
+                        self.attack_combo_timer += self.attack_combo_timeout
                         self.already_hit_targets.clear()
+                        # Tocar som de ataque correspondente
+                    if animation_type in self.attack_sfx:
+                        self.attack_sfx[animation_type].play()
+
                     else:
                         self.is_casting = False
                         self.is_attacking = False
@@ -268,3 +294,11 @@ class Player(Character):
         direction = -1 if self.facing_right else 1
         self.speed_vector.x = direction * knockback_strength
         self.speed_vector.y = -100  # empurrado levemente para cima também
+
+    def handle_hit(self):
+        print("Acertou")
+        if self.current_attack and self.current_attack in self.attack_hit_sfx:
+            self.attack_hit_sfx[self.current_attack].play()
+        self.attack_combo_timer = self.attack_combo_timeout 
+
+
