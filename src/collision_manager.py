@@ -99,7 +99,7 @@ class CollisionManager:
                         if other_object.tag == "player" or other_object.tag == "projectile":
                             other_object.handle_hit()
 
-                    dynamic_object.handle_damage(other_object.damage)
+                    dynamic_object.handle_damage(other_object.damage, other_object.facing_right)
                     if other_object.tag == "projectile":
                         other_object.marked_for_removal = True
                     return

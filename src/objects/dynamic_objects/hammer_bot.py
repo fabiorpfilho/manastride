@@ -21,6 +21,7 @@ class HammerBot(Character):
         self.attack_cooldown = 0.3
         self.marked_for_removal = False  # Para remoção após morte
         self.is_dying = False  # Flag para controle de animação de morte
+        self.is_hurt = False  # New flag to track hurt state
         self.animation_speeds = {
             self.animation_manager.AnimationType.IDLE1: 0.35,
             self.animation_manager.AnimationType.WALK: 0.1,
@@ -83,18 +84,19 @@ class HammerBot(Character):
         # Check for platform edges
         left_platform, right_platform = self.check_edge(platforms)
         
-        # Set movement direction based on facing
-        self.speed_vector.x = self.speed if self.facing_right else -self.speed
+        # Set movement direction based on facing, but not during hurt state
+        if not self.is_hurt:
+            self.speed_vector.x = self.speed if self.facing_right else -self.speed
         
         # Turn around if at edge or hitting a wall
         if (self.facing_right and not right_platform) or (not self.facing_right and not left_platform):
             self.facing_right = not self.facing_right
-            self.speed_vector.x = -self.speed_vector.x
+            if not self.is_hurt:
+                self.speed_vector.x = -self.speed_vector.x
         
         # Update position   
         if not self.is_dying:
             self.position.x += self.speed_vector.x * delta_time
-
 
         self.update_animation(delta_time)
         self.sync_position()
@@ -113,6 +115,21 @@ class HammerBot(Character):
                     self.is_dying = False
                 else:
                     self.update_image()
+            return
+
+        if self.is_hurt:
+            self.animation_timer += delta_time
+            animation_speed = self.animation_speeds.get(self.animation_manager.AnimationType.HURT, 0.1)
+            if self.animation_timer >= animation_speed:
+                self.animation_timer -= animation_speed
+                self.current_frame += 1
+                if self.current_frame >= len(self.current_animation.animation):
+                    self.current_frame = 0
+                    self.is_hurt = False
+                    self.colliders[2].active = True  # Re-enable body collider
+                    self.colliders[0].active = True  # Re-enable hurt box
+                    self.set_animation(self.animation_manager.AnimationType.IDLE1)
+                self.update_image()
             return
 
         if self.is_attacking:
@@ -168,7 +185,6 @@ class HammerBot(Character):
         else:
             self.image.fill(self.sprite)
             
-            
     def draw_sensors_debug(self, screen, camera):
         """Draw debug rectangles for edge detection sensors."""
         # Update sensor positions
@@ -190,7 +206,7 @@ class HammerBot(Character):
         pygame.draw.rect(screen, (255, 0, 0), left_sensor_screen, 0)  # Filled red rectangle
         pygame.draw.rect(screen, (0, 0, 255), right_sensor_screen, 0)  # Filled blue 
     
-    def handle_damage(self, enemy_damage):
+    def handle_damage(self, enemy_damage, damage_source_position=None):
         if self.health <= 0:
             return  # Já morreu, ignora
 
@@ -204,4 +220,12 @@ class HammerBot(Character):
             self.is_dying = True  # Flag opcional para controle
         else:
             self.set_animation(self.animation_manager.AnimationType.HURT)
-            self.is_attacking = False  # Interrompe ataque se necessário
+            self.is_hurt = True
+            self.colliders[2].active = False  # Disable body collider
+            self.colliders[0].active = False  
+            self.is_attacking = False
+            # Apply knockback
+            knockback_strength = 150  # Adjust as needed
+            direction = 1 if damage_source_position else -1
+            self.speed_vector.x = direction * knockback_strength
+            self.speed_vector.y = -150  # Slight upward knockback

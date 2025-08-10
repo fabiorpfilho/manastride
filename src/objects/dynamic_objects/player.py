@@ -36,7 +36,7 @@ class Player(Character):
         # }
 
         self.is_attacking = False
-        self.current_attack = None
+        self.last_attack = None
         self.attack_combo_timer = 20
         self.attack_combo_timeout = 3.2
         self.attack_cooldown = 0.6  # Cooldown entre ataques
@@ -101,7 +101,7 @@ class Player(Character):
         if self.attack_combo_timer > 0:
             self.attack_combo_timer -= delta_time
             if self.attack_combo_timer <= 0:
-                self.current_attack = None
+                self.last_attack = None
                     
         if self.invincibility_timer > 0:
             self.invincibility_timer -= delta_time
@@ -132,14 +132,19 @@ class Player(Character):
 
     def handle_attack(self, keys):
         if keys[pygame.K_z] and not self.is_casting and self.attack_cooldown_timer <= 0:
-            if not self.is_attacking:
+            
+            if self.last_attack is None or self.last_attack == self.animation_manager.AnimationType.ATTACK3:
                 self.set_animation(self.animation_manager.AnimationType.ATTACK1)
-            elif self.current_attack == self.animation_manager.AnimationType.ATTACK1 and self.attack_combo_timer > 0:
+                
+            elif self.last_attack == self.animation_manager.AnimationType.ATTACK1 and self.attack_combo_timer > 0:
                 self.set_animation(self.animation_manager.AnimationType.ATTACK2)
-            elif self.current_attack == self.animation_manager.AnimationType.ATTACK2 and self.attack_combo_timer > 0:
+                
+            elif self.last_attack == self.animation_manager.AnimationType.ATTACK2 and self.attack_combo_timer > 0:
                 self.set_animation(self.animation_manager.AnimationType.ATTACK3)
-            elif self.current_attack == self.animation_manager.AnimationType.ATTACK3 and self.attack_combo_timer > 0:
+                
+            elif self.last_attack == self.animation_manager.AnimationType.ATTACK3 and self.attack_combo_timer > 0:
                 self.set_animation(self.animation_manager.AnimationType.ATTACK1)
+                
             self.attack_cooldown_timer = self.attack_cooldown
 
     def handle_spell_casting(self, keys):
@@ -176,6 +181,7 @@ class Player(Character):
                 if self.current_frame >= len(self.current_animation.animation):
                     self.current_frame = 0
                     self.is_casting = False
+                    print("Animação concluída")
                     self.is_attacking = False
                     self.colliders[2].active = self.is_attacking  # Desativa o ataque após a animação
                     self.set_animation(self.animation_manager.AnimationType.IDLE1)
@@ -230,11 +236,14 @@ class Player(Character):
                     if animation_type == self.animation_manager.AnimationType.CASTING:
                         self.is_casting = True
                         self.is_attacking = False
-                    elif animation_type in (self.animation_manager.AnimationType.ATTACK1, self.animation_manager.AnimationType.ATTACK2, self.animation_manager.AnimationType.ATTACK3):
+                    elif animation_type in (self.animation_manager.AnimationType.ATTACK1, 
+                                            self.animation_manager.AnimationType.ATTACK2, 
+                                            self.animation_manager.AnimationType.ATTACK3):
                         self.is_attacking = True
                         self.is_casting = False
-                        self.current_attack = animation_type
-                        self.attack_combo_timer += self.attack_combo_timeout
+                        self.last_attack = animation_type
+                        
+                        self.attack_combo_timer = self.attack_combo_timeout
                         self.already_hit_targets.clear()
                         # Tocar som de ataque correspondente
                     if animation_type in self.attack_sfx:
@@ -243,7 +252,6 @@ class Player(Character):
                     else:
                         self.is_casting = False
                         self.is_attacking = False
-                        self.current_attack = None
                     self.update_image()
                 break
         else:
@@ -278,7 +286,7 @@ class Player(Character):
             self.image.fill(self.sprite)
 
 
-    def handle_damage(self, enemy_damage):
+    def handle_damage(self, enemy_damage, damage_source_position: None):
         if self.invincibility_timer > 0:
             return  # já está invencível
 
@@ -291,14 +299,13 @@ class Player(Character):
 
         # Knockback leve
         knockback_strength = 300  # ajuste conforme necessário
-        direction = -1 if self.facing_right else 1
+        direction = 1 if damage_source_position else -1
         self.speed_vector.x = direction * knockback_strength
         self.speed_vector.y = -100  # empurrado levemente para cima também
 
     def handle_hit(self):
         print("Acertou")
-        if self.current_attack and self.current_attack in self.attack_hit_sfx:
-            self.attack_hit_sfx[self.current_attack].play()
-        self.attack_combo_timer = self.attack_combo_timeout 
+        if self.last_attack and self.last_attack in self.attack_hit_sfx:
+            self.attack_hit_sfx[self.last_attack].play()
 
 

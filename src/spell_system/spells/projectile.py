@@ -29,8 +29,6 @@ class Projectile(Spell):
         self.pending_projectiles = []    # Projéteis esperando o tempo de spawn
         self.marked_for_removal = False
         self.tag = "projectile"
-        print("Ataque: ", spell_sfx)
-        print("Som: ", spell_hit_sfx )
         self.spell_sfx = spell_sfx or []
         self.spell_hit_sfx = spell_hit_sfx or []
 
@@ -63,7 +61,8 @@ class Projectile(Spell):
                         "effects": effects,
                         "major_rune": "Fan",
                         "minor_runes": minor_rune_names,
-                        "owner": owner
+                        "owner": owner,
+                        "facing_right": direction == 1
                     }
                     self.pending_projectiles.append(projectile)
                 # print(f"🌬️ {self.name} dispara leque de projéteis!")
@@ -78,7 +77,8 @@ class Projectile(Spell):
                         "effects": effects,
                         "major_rune": "Multiple",
                         "minor_runes": minor_rune_names,
-                        "owner": owner
+                        "owner": owner,
+                        "facing_right": direction == 1
                     }
                     self.pending_projectiles.append(projectile)
             elif self.major_rune.name == "Homing":
@@ -91,7 +91,8 @@ class Projectile(Spell):
                     "homing": True,
                     "major_rune": "Homing",
                     "minor_runes": minor_rune_names,
-                    "owner": owner
+                    "owner": owner,
+                    "facing_right": direction == 1
                 }
                 self.pending_projectiles.append(projectile)
                 # print(f"🎯 {self.name} dispara projétil perseguidor!")
@@ -103,7 +104,8 @@ class Projectile(Spell):
                 "damage": self.attributes["damage"],
                 "effects": effects,
                 "major_rune": "Default",
-                "minor_runes": minor_rune_names
+                "minor_runes": minor_rune_names,
+                "facing_right": direction == 1
             }
             self.projectiles.append(projectile)
             # print(f"🏹 {self.name} disparado!")
@@ -164,8 +166,10 @@ class Projectile(Spell):
         """Helper method to spawn a projectile from pending data."""
         projectile = Projectile(
             major_rune=self.major_rune,
-            minor_runes=self.minor_runes
-        )
+            minor_runes=self.minor_runes,
+            spell_sfx=self.spell_sfx,
+            spell_hit_sfx=self.spell_hit_sfx
+    )
         projectile.position.x = player_pos[0]
         projectile.position.y = player_pos[1]
         projectile.size.update(10, 10)
@@ -183,6 +187,7 @@ class Projectile(Spell):
         projectile.minor_rune_names = pending["minor_runes"]
         projectile.effects = pending["effects"]
         projectile.owner = pending.get("owner")
+        projectile.facing_right = pending.get("facing_right", True)
         if "homing" in pending:
             projectile.homing = pending["homing"]
 
@@ -227,6 +232,4 @@ class Projectile(Spell):
     
     
     def handle_hit(self):
-        print("Acertou o feitiço")
-        print(self.spell_hit_sfx)
-        # random.choice(self.spell_hit_sfx).play()
+        random.choice(self.spell_hit_sfx).play()
