@@ -1,235 +1,164 @@
 from spell_system.spell import Spell
 from spell_system.rune import Rune
-from typing import List, Optional
-import pygame 
-from config import SPEED
+from typing import List, Optional, Dict, Tuple
+from objects.dynamic_objects.projectile_instance import ProjectileInstance
+import pygame
 import math
 import random
+from dataclasses import dataclass
+
+@dataclass
+class ProjectileData:
+    """Data structure for projectile attributes."""
+    direction: float
+    speed: float
+    damage: float
+    effects: Dict[str, float]
+    major_rune: str
+    minor_runes: List[str]
+    owner: any
+    facing_right: bool
+    spawn_time: Optional[int] = None
+    homing: bool = False
 
 class Projectile(Spell):
-    def __init__(self, major_rune: Optional[Rune] = None, minor_runes: List[Rune] = None,
-                    spell_sfx: List[pygame.mixer.Sound] = None,
-                    spell_hit_sfx: List[pygame.mixer.Sound] = None):
+    """Classe que gerencia o feitiço de projétil e suas instâncias."""
+    def __init__(self, major_rune: Optional[Rune] = None, minor_runes: List[Rune] = None):
         super().__init__(
             name="Projectile",
             base_attributes={"damage": 10, "speed": 300, "mana_cost": 20},
             major_rune=major_rune,
-            minor_runes=minor_runes,
-            position=(0, 0), 
-            size=(0, 0), 
-            sprite=(0, 255, 0)
-            
+            minor_runes=minor_runes or [],
         )
-        self.already_hit_targets = set()
-        self.add_collider((0, 0), (self.size.x, self.size.y),
-                          type='body', active=True)
-        self.add_collider((0, 0), (self.size.x, self.size.y),
-                          type='attack_box', active=True)
-        self.projectiles = []            # Projéteis já ativos na tela
-        self.pending_projectiles = []    # Projéteis esperando o tempo de spawn
-        self.marked_for_removal = False
-        self.tag = "projectile"
-        self.spell_sfx = spell_sfx or []
-        self.spell_hit_sfx = spell_hit_sfx or []
+        self.projectiles: List[ProjectileInstance] = []  # Projéteis ativos na tela
+        self.pending_projectiles: List[ProjectileData] = []  # Projéteis esperando o tempo de spawn
+        self.marked_for_removal: bool = False
+        
+        
+        self.fireball_sfx = [
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Fireball 1.ogg"),
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Fireball 2.ogg"),
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Fireball 3.ogg"),
+        ]
+        self.icebolt_sfx = [
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Ice Barrage 1.ogg"),
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Ice Barrage 2.ogg"),
+        ]
+        self.spell_hit_sfx = [
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Spell Impact 1.ogg"),
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Spell Impact 2.ogg"),
+            pygame.mixer.Sound("assets/audio/soundEffects/spells/Spell Impact 3.ogg"),
+        ]
 
-
-    def execute(self, direction: float, owner):
+    def execute(self, direction: float, owner) -> None:
+        """Executa o feitiço, criando projéteis com base nas runas."""
         if not self.validate():
             print(f"Feitiço inválido: {self.name}")
             return
 
-        # Efeitos das runas menores
-        effects = {k: v for k, v in self.attributes.items() if k in [
-            "slow", "burn"]}
+        effects = {k: v for k, v in self.attributes.items() if k in ["slow", "burn"]}
         minor_rune_names = [rune.name for rune in self.minor_runes]
-        print("Tocando som: ", self.spell_sfx)
-        random.choice(self.spell_sfx).play()
+        if "Ice" in minor_rune_names:
+            random.choice(self.icebolt_sfx).play()
+        elif "Fire" in minor_rune_names:
+            random.choice(self.fireball_sfx).play()
 
-        if self.major_rune:
-            # Executa comportamento baseado no nome da runa maior
-            if self.major_rune.name == "Fan":
-                # Leque de 5 projéteis
-                # 40° de espalhamento
-                base_angle = 0.5 if direction == 1 else  math.pi - 0.5
-                angles = [base_angle + (i * 0.1) - 0.2 for i in range(5)]
-                # print(f"Angulos {angles}!")
-                for i, angle in enumerate(angles):
-                    projectile = {
-                        "direction": angle,
-                        "speed": self.attributes["speed"],
-                        "damage": self.attributes["damage"] * 0.6,
-                        "effects": effects,
-                        "major_rune": "Fan",
-                        "minor_runes": minor_rune_names,
-                        "owner": owner,
-                        "facing_right": direction == 1
-                    }
-                    self.pending_projectiles.append(projectile)
-                # print(f"🌬️ {self.name} dispara leque de projéteis!")
-            elif self.major_rune.name == "Multiple":
-                for i in range(3):
-                    spawn_time = pygame.time.get_ticks() + (i * 200)
-                    projectile = {
-                        "spawn_time": spawn_time,
-                        "direction": direction,
-                        "speed": self.attributes["speed"],
-                        "damage": self.attributes["damage"],
-                        "effects": effects,
-                        "major_rune": "Multiple",
-                        "minor_runes": minor_rune_names,
-                        "owner": owner,
-                        "facing_right": direction == 1
-                    }
-                    self.pending_projectiles.append(projectile)
-            elif self.major_rune.name == "Homing":
-                # Projétil perseguidor
-                projectile = {
-                    "direction": direction,
-                    "speed": self.attributes["speed"],
-                    "damage": self.attributes["damage"],
-                    "effects": effects,
-                    "homing": True,
-                    "major_rune": "Homing",
-                    "minor_runes": minor_rune_names,
-                    "owner": owner,
-                    "facing_right": direction == 1
-                }
-                self.pending_projectiles.append(projectile)
-                # print(f"🎯 {self.name} dispara projétil perseguidor!")
-        else:
-            # Comportamento padrão
-            projectile = {
-                "direction": direction,
-                "speed": self.attributes["speed"],
-                "damage": self.attributes["damage"],
-                "effects": effects,
-                "major_rune": "Default",
-                "minor_runes": minor_rune_names,
-                "facing_right": direction == 1
-            }
-            self.projectiles.append(projectile)
-            # print(f"🏹 {self.name} disparado!")
-            # if "slow" in effects:
-            #     print("🧊 Projétil com efeito de gelo!")
-            # if "burn" in effects:
-            #     print("🔥 Projétil com efeito de fogo!")
+        base_data = ProjectileData(
+            direction=direction,
+            speed=self.attributes["speed"],
+            damage=self.attributes["damage"],
+            effects=effects,
+            major_rune="Default",
+            minor_runes=minor_rune_names,
+            owner=owner,
+            facing_right=direction == 1
+        )
 
-    def update(self, delta_time: float, player_pos: tuple):
-        # self.sync_position()
-        MAX_DISTANCE = 500
+        rune_handlers = {
+            "None": self._handle_no_rune,
+            "Fan": self._handle_fan_rune,
+            "Multiple": self._handle_multiple_rune,
+            "Homing": self._handle_homing_rune
+        }
+
+        handler = rune_handlers.get(self.major_rune.name if self.major_rune else "None")
+        if handler:
+            handler(base_data, owner)
+            
+    def _handle_no_rune(self, base_data: ProjectileData, owner) -> None:
+        """Cria um único projétil com atraso, semelhante ao Multiple."""
+        projectile_dict = base_data.__dict__.copy()
+        projectile_dict['major_rune'] = "Default"
+        projectile_data = ProjectileData(**projectile_dict)
+        self.pending_projectiles.append(projectile_data)
+
+    def _handle_fan_rune(self, base_data: ProjectileData, owner) -> None:
+        """Cria projéteis em leque."""
+        base_angle = 0.5 if base_data.facing_right else math.pi - 0.5
+        angles = [base_angle + (i * 0.1) - 0.2 for i in range(5)]
+        for angle in angles:
+            # Create a copy of base_data.__dict__ and update direction
+            projectile_dict = base_data.__dict__.copy()
+            projectile_dict['direction'] = angle
+            projectile_dict['damage'] = base_data.damage * 0.6
+            projectile_dict['major_rune'] = "Fan"
+            projectile_data = ProjectileData(**projectile_dict)
+            self.pending_projectiles.append(projectile_data)
+
+    def _handle_multiple_rune(self, base_data: ProjectileData, owner) -> None:
+        """Cria múltiplos projéteis com atraso."""
+        for i in range(3):
+            # Create a copy of base_data.__dict__ and update spawn_time
+            projectile_dict = base_data.__dict__.copy()
+            projectile_dict['spawn_time'] = pygame.time.get_ticks() + (i * 200)
+            projectile_dict['major_rune'] = "Multiple"
+            projectile_data = ProjectileData(**projectile_dict)
+            self.pending_projectiles.append(projectile_data)
+
+    def _handle_homing_rune(self, base_data: ProjectileData, owner) -> None:
+        """Cria um projétil teleguiado."""
+        projectile_data = ProjectileData(
+            **base_data.__dict__,
+            homing=True,
+            major_rune="Homing"
+        )
+        self.pending_projectiles.append(projectile_data)
+
+    def _create_projectile(self, data: ProjectileData, position: Tuple[float, float]) -> ProjectileInstance:
+        """Cria uma instância de projétil a partir dos dados fornecidos."""
+        return ProjectileInstance(
+            position=position,
+            size=(10, 10),
+            speed=data.speed,
+            damage=data.damage,
+            direction=data.direction,
+            effects=data.effects,
+            major_rune_name=data.major_rune,
+            minor_rune_names=data.minor_runes,
+            owner=data.owner,
+            facing_right=data.facing_right,
+            homing=data.homing,
+            hit_sfx=self.spell_hit_sfx
+        )
+
+    def draw(self, surface: pygame.Surface, camera) -> None:
+        """Desenha todos os projéteis ativos."""
+        for proj in self.projectiles:
+            proj.draw(surface, camera)
+            
+
+    def update(self, delta_time: float, player_pos: Tuple[float, float]) -> None:
+        """Atualiza todos os projéteis ativos e pendentes."""
         current_time = pygame.time.get_ticks()
-        
+
         # Spawn projéteis pendentes
         for pending in self.pending_projectiles[:]:
-            if pending.get("spawn_time") is not None:
-                if current_time >= pending["spawn_time"]:
-                    self._spawn_projectile(pending, player_pos)
-            else:
-                self._spawn_projectile(pending, player_pos)
-            
-            
-            
+            if pending.spawn_time is None or current_time >= pending.spawn_time:
+                self.projectiles.append(self._create_projectile(pending, player_pos))
+                self.pending_projectiles.remove(pending)
+
         # Atualizar projéteis ativos
-        # print(f"Projéteis: {self.projectiles}")
-        # print(f"Colisor: {}")
         for proj in self.projectiles[:]:
+            proj.update(delta_time)
             if proj.marked_for_removal:
                 self.projectiles.remove(proj)
-            
-                # print(f"Projétil {proj.name} removido por marcação.")
-                continue
-            
-            if proj.major_rune_name == "Fan":
-                dx = math.cos(proj.direction)
-                dy = -math.sin(proj.direction)
-                proj.position.x += dx * (proj.speed + SPEED) * delta_time
-                proj.position.y += dy * (proj.speed + SPEED) * delta_time
-                distance_traveled = math.hypot(
-                    proj.position.x - proj.start_x, proj.position.y - proj.start_y)
-            else:
-
-                # Movimento linear original para outros tipos
-                proj.position.x += proj.direction * (proj.speed + SPEED) * delta_time
-                distance_traveled = abs(proj.position.x - proj.start_x)
-            
-            
-            if distance_traveled > MAX_DISTANCE:
-                # print(f"Projétil {proj.name} removido por distância máxima.")
-                proj.marked_for_removal = True
-            # if "slow" in proj.effects:
-            #     print(f"🧊 Inimigo atingido por {proj.name} desacelerado!")
-            # if "burn" in proj.effects:
-            #     print(f"🔥 In System: imigo atingido por {proj.name} queimando!")
-
-            
-    def _spawn_projectile(self, pending, player_pos):
-        """Helper method to spawn a projectile from pending data."""
-        projectile = Projectile(
-            major_rune=self.major_rune,
-            minor_runes=self.minor_runes,
-            spell_sfx=self.spell_sfx,
-            spell_hit_sfx=self.spell_hit_sfx
-    )
-        projectile.position.x = player_pos[0]
-        projectile.position.y = player_pos[1]
-        projectile.size.update(10, 10)
-        projectile.add_collider(
-            (0, 0), (10, 10), type='body', active=True)
-        projectile.add_collider(
-            (0, 0), (10, 10), type='attack_box', active=True)
-
-        projectile.speed = pending["speed"]
-        projectile.damage = pending["damage"]
-        projectile.start_x = player_pos[0]
-        projectile.start_y = player_pos[1]
-        projectile.direction = pending["direction"]
-        projectile.major_rune_name = pending["major_rune"]
-        projectile.minor_rune_names = pending["minor_runes"]
-        projectile.effects = pending["effects"]
-        projectile.owner = pending.get("owner")
-        projectile.facing_right = pending.get("facing_right", True)
-        if "homing" in pending:
-            projectile.homing = pending["homing"]
-
-        # Precompute dx, dy for Fan projectiles
-        if pending["major_rune"] == "Fan":
-            projectile.dx = math.cos(pending["direction"])
-            projectile.dy = -math.sin(pending["direction"])
-
-        self.projectiles.append(projectile)
-        self.pending_projectiles.remove(pending)
-
-    def draw(self, surface, camera):
-        for proj in self.projectiles:
-            screen_pos = camera.apply(pygame.Rect(proj.position.x, proj.position.y, 0, 0)).center
-            # Define a cor com base nas runas menores
-            color = (255, 0, 0)  # Padrão: vermelho
-            minor_runes = getattr(proj, "minor_rune_names", [])
-            if "Ice" in minor_runes:
-                color = (0, 200, 255)  # Ice: azul
-            elif "Fire" in minor_runes:
-                color = (255, 100, 0)  # Fire: laranja
-
-            # Define o visual com base na runa maior
-            major_rune = getattr(proj, "major_rune_name", "Default")
-            if major_rune == "Fan":
-                # Círculo menor para múltiplos projéteis
-                pygame.draw.circle(surface, color, screen_pos, 3 * camera.zoom)
-            elif major_rune == "Multiple":
-                # Círculo intermediário para múltiplos disparos
-                pygame.draw.circle(surface, color, screen_pos, 3 * camera.zoom)
-            elif major_rune == "Homing":
-                # Triângulo para perseguição
-                points = [
-                    (screen_pos[0], screen_pos[1] - 5),
-                    (screen_pos[0] - 5, screen_pos[1] + 5),
-                    (screen_pos[0] + 5, screen_pos[1] + 5)
-                ]
-                pygame.draw.polygon(surface, color, points)
-            else:  # Default
-                pygame.draw.circle(surface, color, screen_pos, 5 * camera.zoom)
-
-    
-    
-    def handle_hit(self):
-        random.choice(self.spell_hit_sfx).play()

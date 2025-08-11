@@ -20,8 +20,3 @@ class Character(EntityWithAnimation):
         self.health = health
         self.attackable = attackable
         
-        
-    def sync_position(self):
-        self.rect.topleft = self.position
-        for collider in self.colliders:
-            collider.update_position(self.rect, self.facing_right)

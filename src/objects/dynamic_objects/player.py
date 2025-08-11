@@ -48,6 +48,7 @@ class Player(Character):
         self.flicker_interval = 0.1  # tempo entre piscadas
         self.visible = True  # controla a visibilidade do sprite
 
+        self.mana = 100  # Mana inicial do jogador
         self.is_casting = False
         self.spell_cooldown = 0.5
         self.spell_cooldown_timer = 0
@@ -157,10 +158,16 @@ class Player(Character):
         for key, index in key_to_index.items():
             if keys[key] and self.spell_cooldown_timer <= 0:
                 if hasattr(self, 'spell_system'):
-                    direction = 1 if self.facing_right else -1
-                    self.spell_system.cast_spell(index, direction , self)
-                    self.spell_cooldown_timer = self.spell_cooldown
-                    self.set_animation(self.animation_manager.AnimationType.CASTING)
+                    spell = self.spell_system.spellbook[index - 1]
+                    if self.mana >= spell.mana_cost:
+                        direction = 1 if self.facing_right else -1
+                        mana_cost = self.spell_system.cast_spell(index, direction , self)
+                        self.mana -= mana_cost
+                        self.spell_cooldown_timer = self.spell_cooldown
+                        self.set_animation(self.animation_manager.AnimationType.CASTING)
+                    else:
+                        print("Mana insuficiente para lançar o feitiço.")
+                        self.spell_cooldown_timer = self.spell_cooldown
 
     def apply_gravity(self, delta_time):
         g = (self.gravity + GRAVITY)
@@ -304,8 +311,10 @@ class Player(Character):
         self.speed_vector.y = -100  # empurrado levemente para cima também
 
     def handle_hit(self):
-        print("Acertou")
         if self.last_attack and self.last_attack in self.attack_hit_sfx:
             self.attack_hit_sfx[self.last_attack].play()
+            
+    def handle_pickup(self, rune):
+        print(f"Runas coletadas: {rune.name}")
 
 

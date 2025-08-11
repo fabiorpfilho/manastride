@@ -11,7 +11,3 @@ class EntityWithAnimation(Object):
         self.image.fill(self.sprite)  # Preenche com a cor padrão se não houver animação
         
                 
-    def sync_position(self):
-        self.rect.topleft = self.position
-        for collider in self.colliders:
-            collider.update_position(self.rect)

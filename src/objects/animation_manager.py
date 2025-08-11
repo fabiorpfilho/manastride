@@ -43,8 +43,8 @@ class AnimationManager:
             for anim_name, frames in data.items():
                 sprites = []
                 anim_type = AnimationType[anim_name.upper()]
-                if anim_type in [AnimationType.ATTACK1, AnimationType.ATTACK2, AnimationType.ATTACK3] and image_path.endswith("adventurer-v1.5-Sheet1.png"):
-                    print(f"Carregando animação {anim_name} de {image_path}")
+                # if anim_type in [AnimationType.ATTACK1, AnimationType.ATTACK2, AnimationType.ATTACK3] and image_path.endswith("adventurer-v1.5-Sheet1.png"):
+                #     print(f"Carregando animação {anim_name} de {image_path}")
                 for i, (x, y, w, h) in enumerate(frames):
                     sprite_image = sheet.subsurface(pygame.Rect(x, y, w, h))
 

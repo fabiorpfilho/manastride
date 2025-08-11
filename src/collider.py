@@ -49,4 +49,6 @@ class Collider:
             color = (100, 255, 100) if self.active else (200, 200, 200) 
         elif self.type == 'body':
             color = (0, 0, 255)
+        elif self.type == 'item':
+            color = (255, 255, 0)
         pygame.draw.rect(surface, color, rect, 1)

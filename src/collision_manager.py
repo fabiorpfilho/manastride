@@ -32,6 +32,8 @@ class CollisionManager:
             self._handle_body_collision(dynamic_object, dynamic_collider, objects_to_remove)
         elif dynamic_collider.type == "hurt_box":
             self._handle_hurt_collision(dynamic_object, dynamic_collider)
+        elif dynamic_collider.type == "item":
+            self._handle_item_collision(dynamic_object, dynamic_collider)
 
     def _handle_body_collision(self, dynamic_object, dynamic_collider, objects_to_remove):
         ground_collision_detected = False
@@ -103,6 +105,17 @@ class CollisionManager:
                     if other_object.tag == "projectile":
                         other_object.marked_for_removal = True
                     return
+                
+    def _handle_item_collision(self, dynamic_object, item_collider):
+        for other_object in self.dynamic_objects:
+            if other_object is dynamic_object:
+                continue
+            if other_object.tag == "player" and item_collider.rect.colliderect(other_object.rect):
+                print(f"Jogador colidiu com a runa {dynamic_object.name}!")
+                other_object.handle_pickup(dynamic_object)
+                dynamic_object.marked_for_removal = True
+                return
+
 
 
     def _detect_is_on_ground(self, ground_collision_detected, dynamic_object):

@@ -1,14 +1,11 @@
 from typing import List, Dict, Optional
 from spell_system.rune import Rune
 from spell_system.rune_type import RuneType
-from objects.entity_with_animation import EntityWithAnimation
-import pygame
 
 
-class Spell(EntityWithAnimation):
+class Spell():
     def __init__(self, name: str, base_attributes: Dict, major_rune: Optional[Rune] = None, 
-                 minor_runes: List[Rune] = None, position=(0, 0), size=(10, 10), sprite=(0, 255, 0)):
-        super().__init__(position=position, size=size, sprite=sprite)
+                 minor_runes: List[Rune] = None):
         self.name = name
         self.attributes = base_attributes.copy()
         self.major_rune = major_rune
@@ -42,12 +39,6 @@ class Spell(EntityWithAnimation):
         if any(r.rune_type != RuneType.MINOR for r in self.minor_runes):
             return False
         return True
-    
-    def sync_position(self, direction):
-        self.rect.topleft = self.position
-        for collider in self.colliders:
-            collider.update_position(self.rect, direction)
-
 
     def execute(self, direction, owner, player_pos):
         pass
