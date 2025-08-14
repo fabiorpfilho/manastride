@@ -28,3 +28,5 @@ class Rune(EntityWithSprite):
         # Update rect to reflect new position
         # Update collider position
         self.sync_position()
+
+        

@@ -1,5 +1,6 @@
 from objects.entity_with_animation import EntityWithAnimation
 from pygame.math import Vector2
+from typing import override
 # /*
 # Classe para os personagens, que são entidades dinamicas/moveis, como inimigos e npcs
 #  */
@@ -19,4 +20,10 @@ class Character(EntityWithAnimation):
         self.invincible = invincible
         self.health = health
         self.attackable = attackable
+
         
+    @override
+    def sync_position(self):
+        self.rect.topleft = self.position
+        for collider in self.colliders:
+            collider.update_position(self.rect, self.facing_right)

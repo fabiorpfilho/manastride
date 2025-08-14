@@ -4,9 +4,8 @@ from spell_system.rune_type import RuneType
 
 
 class Spell():
-    def __init__(self, name: str, base_attributes: Dict, major_rune: Optional[Rune] = None, 
+    def __init__(self, base_attributes: Dict, major_rune: Optional[Rune] = None, 
                  minor_runes: List[Rune] = None):
-        self.name = name
         self.attributes = base_attributes.copy()
         self.major_rune = major_rune
         self.minor_runes = minor_runes or []

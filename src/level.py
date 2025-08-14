@@ -264,13 +264,15 @@ class Level:
     
         player_pos = [self.player.position.x + self.player.size[0] / 2, 
                       self.player.position.y + self.player.size[1] / 2]
-
-        for spell in self.player.spell_system.spellbook:
-            spell.update(delta_time, player_pos)
-            for proj in spell.projectiles:
+        
+        projectiles = self.player.spell_system.spellbook[0]
+        if projectiles:  
+            projectiles.update(delta_time, player_pos)
+            for proj in projectiles.projectiles:
                 proj.sync_position()
                 if proj not in self.dynamic_objects:
                     self.dynamic_objects.append(proj)
+
 
         self.collision_manager.update(self.dynamic_objects)
         
@@ -288,7 +290,6 @@ class Level:
     def reset(self):
         # Resetar o jogador
         self.player = Player((100, 300), (20, 30))
-        self.player.spell_system = self.spell_system
 
         # Resetar o inimigo
         self.enemies = [HammerBot((300, 300), (22, 31))]
@@ -296,8 +297,6 @@ class Level:
         self.all_sprites = self.static_objects + self.dynamic_objects
 
         self.score = 0
-        # Limpar feitiços ativos
-        self.spell_system.spellbook.clear()
 
         # Resetar câmera
         self.camera.target = self.player
@@ -311,7 +310,7 @@ class Level:
 
         # Salvar dados importantes
         saved_score = self.score
-        saved_spellbook = self.spell_system.spellbook.copy()
+        saved_spellbook = self.player.spell_system.spellbook.copy()
         # Salvar estado do player
         saved_health = self.player.health
 
@@ -320,9 +319,9 @@ class Level:
 
         # Restaurar dados
         self.score = saved_score
-        self.spell_system.spellbook = saved_spellbook
 
         # Restaurar estado do novo player
         if self.player:
             self.player.health = saved_health
+            self.player.spell_system.spellbook = saved_spellbook
             self.player.sync_position()

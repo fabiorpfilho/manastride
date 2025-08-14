@@ -47,11 +47,13 @@ class Player(Character):
         self.flicker_timer = 0
         self.flicker_interval = 0.1  # tempo entre piscadas
         self.visible = True  # controla a visibilidade do sprite
-
-        self.mana = 100  # Mana inicial do jogador
+        
+        self.max_mana = 100
+        self.mana = self.max_mana
         self.is_casting = False
         self.spell_cooldown = 0.5
         self.spell_cooldown_timer = 0
+        self.dash_timer  = 0
         self.facing_right = True
     
         self.already_hit_targets = set()
@@ -94,6 +96,14 @@ class Player(Character):
         self.sync_position()
         
     def update_timers(self, delta_time):
+
+        if hasattr(self, "dash_timer") and self.dash_timer > 0:
+            self.dash_timer -= delta_time
+            if self.dash_timer <= 0:
+                self.dash_timer = 0
+                # Para o impulso do dash
+                self.speed_vector.x = 0
+                
         if self.spell_cooldown_timer > 0:
             self.spell_cooldown_timer -= delta_time
         if self.attack_cooldown_timer > 0:
@@ -114,16 +124,18 @@ class Player(Character):
             self.visible = True
 
     def handle_movement(self, keys, delta_time):
-        if keys[pygame.K_LEFT]:
-            self.speed_vector.x = -self.speed
-            self.facing_right = False
-        elif keys[pygame.K_RIGHT]:
-            self.speed_vector.x = self.speed
-            self.facing_right = True
-        else:
-            self.speed_vector.x *= 0.8
-            if abs(self.speed_vector.x) < 0.1:
-                self.speed_vector.x = 0
+        # Ignorar entradas de movimento durante o dash
+        if self.dash_timer <= 0:
+            if keys[pygame.K_LEFT]:
+                self.speed_vector.x = -self.speed
+                self.facing_right = False
+            elif keys[pygame.K_RIGHT]:
+                self.speed_vector.x = self.speed
+                self.facing_right = True
+            else:
+                self.speed_vector.x *= 0.8
+                if abs(self.speed_vector.x) < 0.1:
+                    self.speed_vector.x = 0
 
         self.position.x += self.speed_vector.x * delta_time
 
@@ -151,14 +163,12 @@ class Player(Character):
     def handle_spell_casting(self, keys):
         key_to_index = {
             pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3,
-            pygame.K_4: 4, pygame.K_5: 5, pygame.K_6: 6,
-            pygame.K_7: 7, pygame.K_8: 8, pygame.K_9: 9
         }
 
         for key, index in key_to_index.items():
             if keys[key] and self.spell_cooldown_timer <= 0:
                 if hasattr(self, 'spell_system'):
-                    spell = self.spell_system.spellbook[index - 1]
+                    spell = self.spell_system.spellbook[index]
                     if self.mana >= spell.mana_cost:
                         direction = 1 if self.facing_right else -1
                         mana_cost = self.spell_system.cast_spell(index, direction , self)
@@ -170,10 +180,11 @@ class Player(Character):
                         self.spell_cooldown_timer = self.spell_cooldown
 
     def apply_gravity(self, delta_time):
-        g = (self.gravity + GRAVITY)
-        self.position.y += self.speed_vector.y * delta_time + ((g * (delta_time ** 2)) / 2)
-        self.speed_vector.y += g * delta_time
-
+        # Não aplicar gravidade durante o dash
+        if self.dash_timer <= 0:
+            g = (self.gravity + GRAVITY)
+            self.position.y += self.speed_vector.y * delta_time + ((g * (delta_time ** 2)) / 2)
+            self.speed_vector.y += g * delta_time
 
     def update_animation(self, delta_time):
         if not self.animation_manager or not self.current_animation:

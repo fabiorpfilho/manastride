@@ -25,7 +25,6 @@ class Projectile(Spell):
     """Classe que gerencia o feitiço de projétil e suas instâncias."""
     def __init__(self, major_rune: Optional[Rune] = None, minor_runes: List[Rune] = None):
         super().__init__(
-            name="Projectile",
             base_attributes={"damage": 10, "speed": 300, "mana_cost": 20},
             major_rune=major_rune,
             minor_runes=minor_runes or [],
@@ -53,7 +52,6 @@ class Projectile(Spell):
     def execute(self, direction: float, owner) -> None:
         """Executa o feitiço, criando projéteis com base nas runas."""
         if not self.validate():
-            print(f"Feitiço inválido: {self.name}")
             return
 
         effects = {k: v for k, v in self.attributes.items() if k in ["slow", "burn"]}
