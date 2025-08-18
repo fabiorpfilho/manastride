@@ -214,6 +214,7 @@ class HammerBot(Character):
         print(f"HammerBot sofreu {enemy_damage} de dano. Vida restante: {self.health}")
 
         if self.health <= 0:
+            pygame.mixer.Sound("assets/audio/soundEffects/enemy_death.mp3").play(),
             self.set_animation(self.animation_manager.AnimationType.DEATH)
             self.colliders[2].active = False
             self.marked_for_removal = False  # Só será marcado quando a animação terminar

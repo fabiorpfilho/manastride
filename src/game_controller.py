@@ -19,7 +19,7 @@ class GameController:
         self.running = True
         self.paused = False  # Estado de pausa
         self.last_time = time.perf_counter()
-        self.menu = Menu(self.screen, self.width, self.height)  # Instancia o menu
+        self.menu = Menu(self.screen, self.width, self.height, self.level.player)
 
     def run(self):
         while self.running:

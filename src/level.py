@@ -64,7 +64,7 @@ class Level:
         self.all_sprites += self.dynamic_objects
         
         self._process_tilemap()
-        self._load_music(level_name)
+        # self._load_music(level_name)
             
         self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, world_width)
 
@@ -200,8 +200,8 @@ class Level:
             # Carregar ícones (assumindo que estão em assets/ui)
             try:
                 projectile_icon = self.asset_loader.load_image("assets/ui/spells/projectile.png")
-                dash_icon = self.asset_loader.load_image("assets/ui/spells/swiftness.png")
-                shield_icon = self.asset_loader.load_image("assets/ui/spells/fortify_spell.png")
+                dash_icon = self.asset_loader.load_image("assets/ui/spells/dash.png")
+                shield_icon = self.asset_loader.load_image("assets/ui/spells/shield.png")
             except Exception as e:
                 print(f"Erro ao carregar ícones da hotbar: {e}")
                 # Ícones de fallback (retângulos coloridos)
@@ -289,7 +289,10 @@ class Level:
 
     def reset(self):
         # Resetar o jogador
-        self.player = Player((100, 300), (20, 30))
+        # self.player = Player((100, 300), (20, 30))
+        self.player.health = 100
+        self.player.mana = 100
+        self.player.position = (100, 300)
 
         # Resetar o inimigo
         self.enemies = [HammerBot((300, 300), (22, 31))]

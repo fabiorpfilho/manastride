@@ -34,7 +34,7 @@ class AnimationManager:
             sheet = pygame.image.load(image_path).convert_alpha()
             with open(json_path, 'r') as f:
                 data = json.load(f)
-
+            
             CHARACTER_WIDTH = size.x  # 20
             CHARACTER_HEIGHT = size.y  # 30
             ANCHOR_X = CHARACTER_WIDTH // 2  # 10
