@@ -6,11 +6,11 @@ from objects.animation_manager import AnimationManager
 
 class Player(Character):
     def __init__(self, position, size, 
-                 sprite=(0, 255, 0),invincible=False, health=100, 
+                 sprite=(0, 255, 0),invincible=False, max_health=100, 
                  attackable=True, damage=10, speed= SPEED, gravity=0, 
                  speed_vector=(0, 0), jump_speed=0):
         
-        super().__init__(position, size, sprite, invincible, health,
+        super().__init__(position, size, sprite, invincible, max_health,
                          attackable,damage, speed, gravity, speed_vector, jump_speed)
         self.tag = "player"
         self.current_animation = None
@@ -34,7 +34,8 @@ class Player(Character):
         #     self.animation_manager.AnimationType.ATTACK2: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Parry 2.ogg"),
         #     self.animation_manager.AnimationType.ATTACK3: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Parry 3.ogg"),
         # }
-
+        self.health = max_health
+        
         self.is_attacking = False
         self.last_attack = None
         self.attack_combo_timer = 20
@@ -55,6 +56,7 @@ class Player(Character):
         self.spell_cooldown_timer = 0
         self.dash_timer  = 0
         self.facing_right = True
+        self.shield_health = 0
     
         self.already_hit_targets = set()
 

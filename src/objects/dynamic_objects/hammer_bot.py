@@ -7,12 +7,13 @@ import json
 
 class HammerBot(Character):
     def __init__(self, position, size,
-                 sprite=(0, 255, 0),  invincible=False, health=100, 
+                 sprite=(0, 255, 0),  invincible=False, max_health=100, 
                  attackable=True, damage=20, speed= SPEED - 120 , gravity=0, 
                  speed_vector=(0, 0), jump_speed=0):
         
-        super().__init__(position, size, sprite, invincible, health,
+        super().__init__(position, size, sprite, invincible, max_health,
                          attackable, damage, speed, gravity, speed_vector, jump_speed)
+        self.health = max_health
         self.tag = "enemy_npc"
         self.current_animation = None
         self.current_frame = 0

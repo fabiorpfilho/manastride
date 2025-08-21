@@ -10,13 +10,11 @@ from objects.dynamic_objects.hammer_bot import HammerBot
 from collision_manager import CollisionManager
 from camera import Camera
 from spell_system.spell_system import SpellSystem
-from spell_system.spells.projectile import Projectile
 from pygame.math import Vector2
-from objects.sprite import Sprite
-from objects.animation import Animation
-from objects.animation_type import AnimationType
-from objects.animation_manager import AnimationManager
 from asset_loader import AssetLoader
+from ui.score import Score
+from ui.status_bar import StatusBar
+from ui.hotbar import HotBar
 
 class Level:
     def __init__(self, screen, level_name):
@@ -30,10 +28,13 @@ class Level:
         self.background_layers = []
         self.tile_size = 24 
         self.score = 0  # Initialize score
-        self.font = pygame.font.SysFont('arial', 24)  # Font for score and UI display
         
         self.spell_system = SpellSystem()
         self.asset_loader = AssetLoader()
+
+        self.status_bar = StatusBar(self.screen, self.asset_loader)
+        self.score_ui = Score(self.screen, self.asset_loader)
+        self.hotbar = HotBar(self.screen, self.asset_loader)
 
         self.map_data = self.asset_loader.load_map_data(level_name)
         if self.map_data is None:
@@ -104,6 +105,21 @@ class Level:
             position = (x, y)
             size = (width, height)
 
+            # Inicializa as variáveis de spawn do jogador como None
+            player_spawn_x = None
+            player_spawn_y = None
+
+            # Busca as propriedades dentro do elemento <properties>
+            properties = obj.find("properties")
+            if properties is not None:
+                for prop in properties.findall("property"):
+                    if prop.get("name") == "player_spawn_x":
+                        # Substitui vírgula por ponto e converte para float
+                        player_spawn_x = float(prop.get("value"))
+                    elif prop.get("name") == "player_spawn_y":
+                        # Substitui vírgula por ponto e converte para float
+                        player_spawn_y = float(prop.get("value"))
+
             if type_ == "spawn":
                 if name == "player":
                     self.player = Player(position, size)
@@ -116,14 +132,18 @@ class Level:
             elif type_ == "rune":
                 image = self.asset_loader.load_image(f"assets/runes/asset32x32/{name}.png")
                 rune = Rune(position, size, name, image, "major", 10)
-                self.dynamic_objects.append(rune)  # ou outra lista se quiser isolar portas
+                self.dynamic_objects.append(rune)
                 print(f"Runa '{name}' adicionada na posição {position}")
-                # print(f"Rune '{name}' at {position} - ainda não implementado")
             elif type_ == "door":
-                door = Door(position, size, name)
-                self.static_objects.append(door)  # ou outra lista se quiser isolar portas
-                self.all_sprites.append(door)  # apenas para debug, se desejar
-
+                # Verifica se as propriedades de spawn foram encontradas
+                if player_spawn_x is not None and player_spawn_y is not None:
+                    player_spawn = (player_spawn_x, player_spawn_y)
+                    print(f"Player spawn: {player_spawn}")
+                    door = Door(position, size, name, player_spawn)
+                    self.static_objects.append(door)
+                    self.all_sprites.append(door)  # apenas para debug, se desejar
+                else:
+                    print(f"Erro: Propriedades player_spawn_x e player_spawn_y não encontradas para a porta {name}")
     def _process_tilemap(self):
         """Processa a camada de blocos do mapa Tiled."""
         layer = self.map_data.find("layer")
@@ -173,66 +193,12 @@ class Level:
         # Desenha os feitiços
         for spell in self.player.spell_system.spellbook:
             spell.draw(self.screen, self.camera)
-
-        # Desenha a UI de vida e mana no canto superior esquerdo
+            
         if self.player:
-            health_text = self.font.render(f'Vida: {int(self.player.health)}', True, (255, 255, 255))
-            health_rect = health_text.get_rect(topleft=(10, 10))
-            self.screen.blit(health_text, health_rect)
+            self.status_bar.draw(self.player)
+            self.hotbar.draw()
 
-            mana_text = self.font.render(f'Mana: {int(self.player.mana)}', True, (255, 255, 255))
-            mana_rect = mana_text.get_rect(topleft=(10, 40))
-            self.screen.blit(mana_text, mana_rect)
-
-        # Desenha a pontuação no canto superior direito
-        score_text = self.font.render(f'Pontuação: {self.score}', True, (255, 255, 255))
-        score_rect = score_text.get_rect(topright=(screen_width - 10, 10))
-        self.screen.blit(score_text, score_rect)
-
-        # Desenha a hotbar no centro inferior da tela
-        if self.player:
-            box_size = 50  # Tamanho de cada caixa (50x50 pixels)
-            box_spacing = 10  # Espaço entre caixas
-            total_width = (box_size * 3) + (box_spacing * 2)  # Largura total da hotbar
-            start_x = (screen_width - total_width) // 2  # Centralizar horizontalmente
-            start_y = screen_height - box_size - 10  # 10 pixels acima da borda inferior
-
-            # Carregar ícones (assumindo que estão em assets/ui)
-            try:
-                projectile_icon = self.asset_loader.load_image("assets/ui/spells/projectile.png")
-                dash_icon = self.asset_loader.load_image("assets/ui/spells/dash.png")
-                shield_icon = self.asset_loader.load_image("assets/ui/spells/shield.png")
-            except Exception as e:
-                print(f"Erro ao carregar ícones da hotbar: {e}")
-                # Ícones de fallback (retângulos coloridos)
-                projectile_icon = pygame.Surface((40, 40))
-                projectile_icon.fill((255, 0, 0))  # Vermelho para projétil
-                dash_icon = pygame.Surface((40, 40))
-                dash_icon.fill((0, 255, 0))  # Verde para dash
-                shield_icon = pygame.Surface((40, 40))
-                shield_icon.fill((0, 0, 255))  # Azul para escudo
-                
-
-            # Escalar ícones para caber nas caixas (40x40 para deixar margem)
-            projectile_icon = pygame.transform.scale(projectile_icon, (40, 40))
-            dash_icon = pygame.transform.scale(dash_icon, (40, 40))
-            shield_icon = pygame.transform.scale(shield_icon, (40, 40))
-
-            # Desenhar as três caixas
-            hotbar = [
-                {"icon": projectile_icon, "rect": pygame.Rect(start_x, start_y, box_size, box_size)},
-                {"icon": dash_icon, "rect": pygame.Rect(start_x + box_size + box_spacing, start_y, box_size, box_size)},
-                {"icon": shield_icon, "rect": pygame.Rect(start_x + (box_size + box_spacing) * 2, start_y, box_size, box_size)},
-            ]
-
-            for item in hotbar:
-                # Desenhar a caixa (fundo cinza com borda branca)
-                pygame.draw.rect(self.screen, (50, 50, 50), item["rect"])  # Fundo
-                pygame.draw.rect(self.screen, (255, 255, 255), item["rect"], 2)  # Borda
-                # Desenhar o ícone centralizado na caixa
-                icon_x = item["rect"].x + (box_size - 40) // 2  # Centralizar ícone (40x40) na caixa (50x50)
-                icon_y = item["rect"].y + (box_size - 40) // 2
-                self.screen.blit(item["icon"], (icon_x, icon_y))
+        self.score_ui.draw(self.score)
 
         # Desenha colisores de debug
         for obj in self.dynamic_objects:  # Cópia para remoção segura
@@ -277,10 +243,16 @@ class Level:
         self.collision_manager.update(self.dynamic_objects)
         
         if self.collision_manager.door_triggered:
-            new_map = self.collision_manager.door_triggered
-            self._load_new_map(new_map)
+
+            print(f"Door triggered: {self.collision_manager.door_triggered}")
+            door_triggered = self.collision_manager.door_triggered
+            target_map = door_triggered.target_map
+            player_spawn = door_triggered.player_spawn
+            # self._load_new_map(target_map, player_spawn)
             return
         self.camera.update(self.player)   
+
+        
         
         # Atualizar os offsets do fundo com base no movimento da câmera
         for layer in self.background_layers:
@@ -308,7 +280,7 @@ class Level:
         # Resetar colisores
         self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, self.map_width * self.tile_width)
 
-    def _load_new_map(self, level_name):
+    def _load_new_map(self, level_name, player_spawn):
         print(f"Trocando para o mapa: {level_name}")
 
         # Salvar dados importantes
@@ -316,6 +288,7 @@ class Level:
         saved_spellbook = self.player.spell_system.spellbook.copy()
         # Salvar estado do player
         saved_health = self.player.health
+        saved_mana = self.player.mana
 
         # Recarrega tudo (vai sobrescrever self.player)
         self.__init__(self.screen, level_name)
@@ -326,5 +299,6 @@ class Level:
         # Restaurar estado do novo player
         if self.player:
             self.player.health = saved_health
+            self.player.mana = saved_mana
             self.player.spell_system.spellbook = saved_spellbook
             self.player.sync_position()

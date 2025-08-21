@@ -7,7 +7,7 @@ from pygame.math import Vector2
 
 
 class Character(EntityWithAnimation):
-    def __init__(self, position, size, sprite=(0, 255, 0), invincible=False, health=100, attackable=True,
+    def __init__(self, position, size, sprite=(0, 255, 0), invincible=False, max_health=100, attackable=True,
                  damage=10,  speed=3, gravity=1, speed_vector=(0, 0), jump_speed=10):
       
         super().__init__(position, size, sprite=sprite)
@@ -18,7 +18,7 @@ class Character(EntityWithAnimation):
         self.jump_speed = jump_speed
         self.on_ground = False
         self.invincible = invincible
-        self.health = health
+        self.max_health = max_health
         self.attackable = attackable
 
         
