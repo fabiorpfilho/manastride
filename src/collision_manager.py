@@ -16,9 +16,9 @@ class CollisionManager:
             self._handle_collisions(dynamic_object, objects_to_remove)
 
         for obj in objects_to_remove:
-            if obj in self.dynamic_objects:
-                self.dynamic_objects.remove(obj)
             obj.marked_for_removal = True
+            objects_to_remove.remove(obj)
+            
 
     def _handle_collisions(self, dynamic_object, objects_to_remove):
         for dynamic_collider in dynamic_object.colliders:

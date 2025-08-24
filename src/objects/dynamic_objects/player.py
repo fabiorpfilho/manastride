@@ -51,6 +51,12 @@ class Player(Character):
         
         self.max_mana = 100
         self.mana = self.max_mana
+        self.mana_regen_rate = 5  # Mana por segundo (base)
+        self.mana_regen_boost_rate = 10  # Mana por segundo durante o boost
+        self.mana_boost_duration = 3.0  # Duração do boost em segundos
+        self.mana_boost_timer = 0  # Temporizador do boost
+        
+        
         self.is_casting = False
         self.spell_cooldown = 0.5
         self.spell_cooldown_timer = 0
@@ -124,6 +130,16 @@ class Player(Character):
                 self.visible = not self.visible 
         else:
             self.visible = True
+            
+        # Regeneração de mana
+        regen_rate = self.mana_regen_boost_rate if self.mana_boost_timer > 0 else self.mana_regen_rate
+        self.mana += regen_rate * delta_time
+        if self.mana > self.max_mana:
+            self.mana = self.max_mana
+
+        # Atualiza o temporizador de boost de mana
+        if self.mana_boost_timer > 0:
+            self.mana_boost_timer -= delta_time
 
     def handle_movement(self, keys, delta_time):
         # Ignorar entradas de movimento durante o dash
@@ -166,11 +182,11 @@ class Player(Character):
         key_to_index = {
             pygame.K_1: 1, pygame.K_2: 2, pygame.K_3: 3,
         }
-
         for key, index in key_to_index.items():
             if keys[key] and self.spell_cooldown_timer <= 0:
                 if hasattr(self, 'spell_system'):
-                    spell = self.spell_system.spellbook[index]
+                    spell_index = index - 1
+                    spell = self.spell_system.spellbook[spell_index]
                     if self.mana >= spell.mana_cost:
                         direction = 1 if self.facing_right else -1
                         mana_cost = self.spell_system.cast_spell(index, direction , self)
@@ -309,25 +325,38 @@ class Player(Character):
     def handle_damage(self, enemy_damage, damage_source_position: None):
         if self.invincibility_timer > 0:
             return  # já está invencível
+        
 
-        self.health -= enemy_damage
-        print(f"Sofreu dano! Vida restante: {self.health}")
-
+        
         self.invincibility_timer = self.invincibility_duration
         self.flicker_timer = self.flicker_interval
         self.visible = False
-
+        
+        if self.shield_health > 0:
+            self.shield_health -= enemy_damage
+            print(f"Escudo absorveu dano! Vida do escudo: {self.shield_health}")
+            if self.shield_health <= 0:
+                print("Escudo destruído!")
+            return
+        
+        
         # Knockback leve
         knockback_strength = 300  # ajuste conforme necessário
         direction = 1 if damage_source_position else -1
         self.speed_vector.x = direction * knockback_strength
         self.speed_vector.y = -100  # empurrado levemente para cima também
 
+        self.health -= enemy_damage
+        print(f"Sofreu dano! Vida restante: {self.health}")
+
+
+
     def handle_hit(self):
         if self.last_attack and self.last_attack in self.attack_hit_sfx:
             self.attack_hit_sfx[self.last_attack].play()
+        self.mana_boost_timer = self.mana_boost_duration  # Ativa o boost de regeneração de mana
             
     def handle_pickup(self, rune):
-        print(f"Runas coletadas: {rune.name}")
+        self.spell_system.add_rune(rune)
 
 

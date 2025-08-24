@@ -221,12 +221,17 @@ class Level:
                     obj.update(delta_time, self.static_objects)
             elif isinstance(obj, (Player)):
                 obj.update(delta_time)
-            elif isinstance(obj, Rune):
+            elif isinstance(obj, Rune, ):
                 if obj.marked_for_removal:
                     self.dynamic_objects.remove(obj)
                     self.all_sprites.remove(obj)
                 else:
                     obj.update(delta_time)
+            elif hasattr(obj, "marked_for_removal"):
+                if obj.marked_for_removal:
+                    self.dynamic_objects.remove(obj)
+                    self.all_sprites.remove(obj)
+
     
         player_pos = [self.player.position.x + self.player.size[0] / 2, 
                       self.player.position.y + self.player.size[1] / 2]
@@ -238,6 +243,16 @@ class Level:
                 proj.sync_position()
                 if proj not in self.dynamic_objects:
                     self.dynamic_objects.append(proj)
+                    self.all_sprites.append(proj)
+                    
+        shields = self.player.spell_system.spellbook[2]
+        if shields:  
+            shields.update(delta_time)
+            for shield in shields.shields:
+                shield.sync_position()
+                if shield not in self.dynamic_objects:
+                    self.dynamic_objects.append(shield)
+                    self.all_sprites.append(shield)
 
 
         self.collision_manager.update(self.dynamic_objects)
