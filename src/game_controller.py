@@ -1,7 +1,7 @@
 import pygame
 import time
 from level import Level
-from menu import Menu
+from menu.menu import Menu
 from config import DELTA_TIME
 
 
@@ -49,7 +49,7 @@ class GameController:
             self.level.draw()  # Sempre desenha o nível para manter o estado visual
 
             if self.paused:
-                self.menu.draw(mouse_pos)  # Desenha o menu de pausa
+                self.menu.draw()  # Desenha o menu de pausa
 
             pygame.display.flip()
 

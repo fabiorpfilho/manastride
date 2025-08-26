@@ -74,8 +74,8 @@ class Projectile(Spell):
 
         rune_handlers = {
             "None": self._handle_no_rune,
-            "Fan": self._handle_fan_rune,
-            "Multiple": self._handle_multiple_rune,
+            "fan": self._handle_fan_rune,
+            "multiple": self._handle_multiple_rune,
             "Homing": self._handle_homing_rune
         }
 
@@ -104,6 +104,7 @@ class Projectile(Spell):
             self.pending_projectiles.append(projectile_data)
 
     def _handle_multiple_rune(self, base_data: ProjectileData, owner) -> None:
+        print("Entrou na função de multiplo")
         """Cria múltiplos projéteis com atraso."""
         for i in range(3):
             # Create a copy of base_data.__dict__ and update spawn_time
