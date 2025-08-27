@@ -1,3 +1,4 @@
+
 from objects.entity_with_animation import EntityWithAnimation
 import pygame
 import math
@@ -39,17 +40,27 @@ class ProjectileInstance(EntityWithAnimation):
         self.current_frame = 0
         self.animation_timer = 0
         self.animation_speed = 0.1  # Seconds per frame, adjustable
-        self.use_animation = "Fire" in self.minor_rune_names or self.major_rune_name == "Default"
+        self.use_animation = True  # Always use firebolt animation
 
         if self.use_animation and self.animation_manager:
-            # Load fireball animation
+            # Sprite configuration for different projectile types
+            sprite_config = {
+                "Default": {"image_path": "assets/spells/fire/Firebolt SpriteSheet.png", "json_path": "assets/spells/fire/Firebolt SpriteSheet.json"},
+                "Fan": {"image_path": "assets/spells/fire/Firebolt SpriteSheet.png", "json_path": "assets/spells/fire/Firebolt SpriteSheet.json"},
+                "Multiple": {"image_path": "assets/spells/fire/Firebolt SpriteSheet.png", "json_path": "assets/spells/fire/Firebolt SpriteSheet.json"},
+                "Homing": {"image_path": "assets/spells/fire/Firebolt SpriteSheet.png", "json_path": "assets/spells/fire/Firebolt SpriteSheet.json"},
+                # Add more configurations here for other types, e.g.:
+                # "Ice": {"image_path": "assets/spells/ice/Icebolt SpriteSheet.png", "json_path": "assets/spells/ice/Icebolt SpriteSheet.json"},
+            }
+            
+            config = sprite_config.get(self.major_rune_name, sprite_config["Default"])
             self.animation_manager.load_animations_from_json(
                 self.size,
-                image_path="assets/spells/fire/Firebolt SpriteSheet.png",
-                json_path="assets/spells/fire/Firebolt SpriteSheet.json"
+                image_path=config["image_path"],
+                json_path=config["json_path"]
             )
             if not self.animation_manager.animationList:
-                print("Erro: Nenhuma animação de fireball carregada")
+                print(f"Erro: Nenhuma animação carregada para {self.major_rune_name}")
                 self.use_animation = False  # Fallback to circle if animation fails
             else:
                 self.set_animation(self.animation_manager.AnimationType.ATTACK1)
@@ -105,7 +116,6 @@ class ProjectileInstance(EntityWithAnimation):
         if distance_traveled > max_distance:
             self.marked_for_removal = True
 
-        # Update animation if applicable
         if self.use_animation:
             self.update_animation(delta_time)
 
@@ -114,11 +124,10 @@ class ProjectileInstance(EntityWithAnimation):
         screen_pos = camera.apply(pygame.Rect(self.position.x, self.position.y, 0, 0)).center
 
         if self.use_animation and self.image:
-            # Draw animated sprite
             screen_rect = camera.apply(self.rect)
             surface.blit(self.image, screen_rect.topleft)
         else:
-            # Fallback to original drawing method
+            # Fallback drawing method (retained for easy switching)
             color = (255, 0, 0)  # Default: red
             if "Ice" in self.minor_rune_names:
                 color = (0, 200, 255)  # Ice: blue

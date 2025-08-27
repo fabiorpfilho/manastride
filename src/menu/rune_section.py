@@ -3,8 +3,6 @@ from spell_system.rune_type import RuneType
 from config import RUNE_COLORS
 
 class RunesSection:
-    # Define unique colors for each rune (example mapping, adjust based on actual runes)
-
     def __init__(self, menu):
         self.menu = menu
         self.selected_item = 0
@@ -33,16 +31,24 @@ class RunesSection:
                     # Select rune and assign to selected spell
                     if self.menu.selected_spell is not None and self.selected_item < len(self.menu.player.spell_system.runes):
                         rune = self.menu.player.spell_system.runes[self.selected_item]
-                        # Check rune limits
                         spell = self.menu.player.spell_system.spellbook[self.menu.selected_spell]
-                        if rune.rune_type == RuneType.MAJOR and spell.major_rune is None:
-                            self.menu.player.spell_system.update_spell(self.menu.selected_spell + 1, major_rune=rune, minor_runes=spell.minor_runes)
+                        if rune.rune_type == RuneType.MAJOR:
+                            # Allow replacing the major rune
+                            self.menu.player.spell_system.update_spell(
+                                self.menu.selected_spell + 1,
+                                major_rune=rune,
+                                minor_runes=spell.minor_runes
+                            )
                             self.menu.selected_spell = None
                             self.menu.spells_section.selected_section = 'spells'
                             self.selected_item = 0
                         elif rune.rune_type == RuneType.MINOR and len(spell.minor_runes) < 2:
                             new_minor_runes = spell.minor_runes + [rune]
-                            self.menu.player.spell_system.update_spell(self.menu.selected_spell + 1, major_rune=spell.major_rune, minor_runes=new_minor_runes)
+                            self.menu.player.spell_system.update_spell(
+                                self.menu.selected_spell + 1,
+                                major_rune=spell.major_rune,
+                                minor_runes=new_minor_runes
+                            )
                             self.menu.selected_spell = None
                             self.menu.spells_section.selected_section = 'spells'
                             self.selected_item = 0
