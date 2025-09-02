@@ -28,30 +28,29 @@ class RunesSection:
                 elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     self.selected_item = min(max_runes - 1, self.selected_item + 1)
                 elif event.key == pygame.K_RETURN:
-                    # Select rune and assign to selected spell
+                    # Selecionar runa e delegar toda lógica para SpellSystem
                     if self.menu.selected_spell is not None and self.selected_item < len(self.menu.player.spell_system.runes):
                         rune = self.menu.player.spell_system.runes[self.selected_item]
                         spell = self.menu.player.spell_system.spellbook[self.menu.selected_spell]
+
                         if rune.rune_type == RuneType.MAJOR:
-                            # Allow replacing the major rune
                             self.menu.player.spell_system.update_spell(
                                 self.menu.selected_spell + 1,
                                 major_rune=rune,
                                 minor_runes=spell.minor_runes
                             )
-                            self.menu.selected_spell = None
-                            self.menu.spells_section.selected_section = 'spells'
-                            self.selected_item = 0
-                        elif rune.rune_type == RuneType.MINOR and len(spell.minor_runes) < 2:
-                            new_minor_runes = spell.minor_runes + [rune]
+                        elif rune.rune_type == RuneType.MINOR:
                             self.menu.player.spell_system.update_spell(
                                 self.menu.selected_spell + 1,
                                 major_rune=spell.major_rune,
-                                minor_runes=new_minor_runes
+                                minor_runes=[rune]
                             )
-                            self.menu.selected_spell = None
-                            self.menu.spells_section.selected_section = 'spells'
-                            self.selected_item = 0
+
+                        # Resetar seleção
+                        self.menu.selected_spell = None
+                        self.menu.spells_section.selected_section = 'spells'
+                        self.selected_item = 0
+
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 for i, rect in enumerate(self.menu_rects):
                     if rect.collidepoint(mouse_pos):

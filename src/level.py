@@ -196,7 +196,7 @@ class Level:
             
         if self.player:
             self.status_bar.draw(self.player)
-            self.hotbar.draw()
+            self.hotbar.draw(self.player)
 
         self.score_ui.draw(self.score)
 
@@ -236,23 +236,22 @@ class Level:
         player_pos = [self.player.position.x + self.player.size[0] / 2, 
                       self.player.position.y + self.player.size[1] / 2]
         
-        projectiles = self.player.spell_system.spellbook[0]
-        if projectiles:  
-            projectiles.update(delta_time, player_pos)
-            for proj in projectiles.projectiles:
-                proj.sync_position()
-                if proj not in self.dynamic_objects:
-                    self.dynamic_objects.append(proj)
-                    self.all_sprites.append(proj)
-                    
-        shields = self.player.spell_system.spellbook[2]
-        if shields:  
-            shields.update(delta_time)
-            for shield in shields.shields:
-                shield.sync_position()
-                if shield not in self.dynamic_objects:
-                    self.dynamic_objects.append(shield)
-                    self.all_sprites.append(shield)
+        self.player.spell_system.update(delta_time, player_pos)
+
+        # Certifique-se de que todos os projéteis e escudos ativos estão no dynamic_objects / all_sprites
+        for spell in self.player.spell_system.spellbook:
+            if not spell:
+                continue
+            if hasattr(spell, "projectiles"):
+                for proj in spell.projectiles:
+                    if proj not in self.dynamic_objects:
+                        self.dynamic_objects.append(proj)
+                        self.all_sprites.append(proj)
+            if hasattr(spell, "shields"):
+                for shield in spell.shields:
+                    if shield not in self.dynamic_objects:
+                        self.dynamic_objects.append(shield)
+                        self.all_sprites.append(shield)
 
 
         self.collision_manager.update(self.dynamic_objects)
@@ -265,6 +264,8 @@ class Level:
             player_spawn = door_triggered.player_spawn
             # self._load_new_map(target_map, player_spawn)
             return
+        
+        
         self.camera.update(self.player)   
 
         

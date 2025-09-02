@@ -9,6 +9,7 @@ class Dash(Spell):
             base_attributes={"distance": 150, "mana_cost": 20, "duration": 0.15},
             major_rune=major_rune,
             minor_runes=minor_runes or [],
+            cooldown=1.0  # Cooldown de 1 segundo entre dashes
         )
 
     def execute(self, direction: int, caster):

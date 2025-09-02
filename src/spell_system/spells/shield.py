@@ -10,6 +10,7 @@ class Shield(Spell):
             base_attributes={"health": 20, "mana_cost": 20},
             major_rune=major_rune,
             minor_runes=minor_runes or [],
+            cooldown=5.0  # Cooldown de 5 segundos entre escudos
         )
         self.shields: List[ShieldInstance] = []  # Escudos ativos na tela
         self.owner = None  # Referência a entidade que possui o escudo
@@ -45,7 +46,7 @@ class Shield(Spell):
     def update(self, delta_time: float):
         """Atualiza todos os escudos ativos."""
         for shield in self.shields[:]:
-            shield.update(delta_time, self.owner.shield_health)
+            shield.update(delta_time, self.owner.shield_health, self.owner.on_ground)
             if shield.marked_for_removal:
                 self.shields.remove(shield)
                 if shield.owner:

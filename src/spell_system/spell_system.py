@@ -1,11 +1,11 @@
 from spell_system.rune import Rune
-from spell_system.rune_type import RuneType
 from spell_system.spell import Spell
 from typing import List
 from spell_system.spells.projectile import Projectile
 from spell_system.spells.dash import Dash
 from spell_system.spells.shield import Shield
 import pygame
+
 
 class SpellSystem:
     def __init__(self):
@@ -24,11 +24,14 @@ class SpellSystem:
         spell_index = index - 1
         if 0 <= spell_index < len(self.spellbook) and self.spellbook[spell_index] is not None:
             spell = self.spellbook[spell_index]
-            if spell.validate():
+            if spell.validate() and spell.current_cooldown <= 0:
+                print(f"Casting spell at index {index} with direction {direction}")
                 spell.execute(direction, owner)
+                spell.current_cooldown = spell.cooldown  # inicia cooldown
                 return spell.mana_cost
             else:
-                print(f"Feitiço inválido, index: {spell_index}")
+                print(f"Feitiço inválido ou em cooldown, index: {spell_index}")
+                return 0
         else:
             print(f"Nenhum feitiço no índice {index}")
 
@@ -41,28 +44,74 @@ class SpellSystem:
         if rune in self.runes:
             self.runes.remove(rune)
 
+    def update(self, delta_time: float, player_pos: List[float]):
+        """Atualiza cooldowns, projéteis e escudos."""
+        for spell in self.spellbook:
+            if not spell:
+                continue
+
+            # --- Reduz cooldown ---
+            if spell.current_cooldown > 0:
+                spell.current_cooldown = max(0.0, spell.current_cooldown - delta_time)
+
+            # --- Atualiza projéteis ---
+            if hasattr(spell, "projectiles"):
+                spell.update(delta_time, player_pos)  # apenas lógica de projéteis
+                for proj in spell.projectiles:
+                    proj.sync_position()
+
+            # --- Atualiza escudos ---
+            if hasattr(spell, "shields"):
+                spell.update(delta_time)  # apenas lógica de escudos
+                for shield in spell.shields:
+                    shield.sync_position()
+
     def update_spell(self, index: int, major_rune: Rune = None, minor_runes: List[Rune] = None):
-        """Update the spell at the given index with new runes, keeping the spell type fixed."""
+        """
+        Atualiza o feitiço no índice dado, aplicando toggle de runas
+        (remove se já estiver vinculada), garantindo exclusividade
+        entre feitiços e respeitando limites de major/minor.
+        """
         spell_index = index - 1
         if spell_index not in [0, 1, 2]:
             print(f"Índice inválido: {index}. Use 1 (Projectile), 2 (Dash) ou 3 (Shield).")
             return
 
+        current_spell = self.spellbook[spell_index]
         minor_runes = minor_runes or []
-        # Enforce limits: 1 major rune, 2 minor runes
-        if major_rune and major_rune.rune_type != RuneType.MAJOR:
-            print(f"Runa {major_rune.name} não é MAJOR.")
-            return
-        if len(minor_runes) > 2:
-            print("Máximo de 2 runas menores permitido.")
-            minor_runes = minor_runes[:2]
-        if any(rune.rune_type != RuneType.MINOR for rune in minor_runes):
-            print("Apenas runas menores podem ser adicionadas como minor_runes.")
-            return
 
+        # --- Toggle Major ---
+        if major_rune and current_spell.major_rune == major_rune:
+            major_rune = None  # desativa se já estava
+
+        # --- Toggle Minor ---
+        new_minor_runes = list(current_spell.minor_runes)  # cópia
+        for r in minor_runes:
+            if r in new_minor_runes:
+                new_minor_runes.remove(r)  # toggle → remove
+            else:
+                new_minor_runes.append(r)  # adiciona
+
+        # Garantir limite de 2 minors
+        if len(new_minor_runes) > 2:
+            new_minor_runes = new_minor_runes[:2]
+
+        # --- Exclusividade: remover runas iguais de outros feitiços ---
+        for i, spell in enumerate(self.spellbook):
+            if spell is None or i == spell_index:
+                continue
+
+            # Major única
+            if major_rune and spell.major_rune == major_rune:
+                spell.major_rune = None
+
+            # Minors únicas
+            spell.minor_runes = [r for r in spell.minor_runes if r not in new_minor_runes]
+
+        # --- Reatribuir feitiço atualizado ---
         if spell_index == 0:
-            self.spellbook[0] = Projectile(major_rune=major_rune, minor_runes=minor_runes)
+            self.spellbook[0] = Projectile(major_rune=major_rune, minor_runes=new_minor_runes)
         elif spell_index == 1:
-            self.spellbook[1] = Dash(major_rune=major_rune, minor_runes=minor_runes)
+            self.spellbook[1] = Dash(major_rune=major_rune, minor_runes=new_minor_runes)
         elif spell_index == 2:
-            self.spellbook[2] = Shield(major_rune=major_rune, minor_runes=minor_runes)
+            self.spellbook[2] = Shield(major_rune=major_rune, minor_runes=new_minor_runes)
