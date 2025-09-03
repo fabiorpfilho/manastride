@@ -65,7 +65,7 @@ class Level:
         self.all_sprites += self.dynamic_objects
         
         self._process_tilemap()
-        # self._load_music(level_name)
+        self._load_music(level_name)
             
         self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, world_width)
 
