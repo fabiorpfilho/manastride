@@ -11,3 +11,6 @@ RUNE_COLORS = {
         'multiple': (128, 128, 255), # Example minor rune
         # Add more rune-specific colors as needed
 }
+
+HIGHLIGHT_COLOR = (100, 100, 150) 
+BUTTON_COLOR = (255, 255, 255) 

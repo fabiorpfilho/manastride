@@ -41,7 +41,7 @@ class CollisionManager:
             for static_collider in static.colliders:
                 if dynamic_collider.rect.colliderect(static_collider.rect):
                     if static_collider.type == "door" and dynamic_object.tag == "player":
-                        self.door_triggered = {static.target_map, static.player_spawn}
+                        self.door_triggered = (static.target_map, static.player_spawn)
                         continue
 
                     if dynamic_object.tag == "projectile":
@@ -81,6 +81,9 @@ class CollisionManager:
         for other_object in self.dynamic_objects:
 
             if other_object is dynamic_object:
+                continue
+            
+            if dynamic_object.tag == "enemy_npc" and other_object.tag == "enemy_npc":
                 continue
 
             if other_object.tag == "projectile" and other_object.owner == dynamic_object:

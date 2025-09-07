@@ -3,6 +3,8 @@ from menu.desc_section import DescriptionSection
 from menu.main_menu import MainMenu
 from menu.spell_section import SpellsSection
 from menu.rune_section import RunesSection 
+from menu.initial_menu import InitialMenu
+from menu.instruction_section import InstructionSection
 
 class Menu:
     def __init__(self, screen, width, height, player):
@@ -11,24 +13,36 @@ class Menu:
         self.height = height
         self.font = pygame.font.SysFont('arial', 24)
         self.player = player
-        self.current_menu = 'main'
+        self.current_menu = 'initial'  # Começa com o menu inicial
         self.icon_cache = {}
         self.selected_spell = None  # Index of selected spell (0, 1, or 2)
         self.selected_rune = None   # Index of selected rune
+        self.selected_menu_item = 0  # Para navegação no menu inicial e pausa
         
         # Initialize section classes
         self.main_menu = MainMenu(self)
         self.spells_section = SpellsSection(self)
         self.runes_section = RunesSection(self)
         self.description_section = DescriptionSection(self)
+        self.instruction_section = InstructionSection(self)
+        self.initial_menu = InitialMenu(self)  # Nova classe para menus inicial e de controles
 
-    def handle_input(self, events, paused, running):
+    def handle_input(self, events, paused, running, mouse_pos=None):
         """Processa entrada e coordena entre as seções."""
-        mouse_pos = pygame.mouse.get_pos()
+        if mouse_pos is None:
+            mouse_pos = pygame.mouse.get_pos()
         
-        if self.current_menu == 'main':
+        if self.current_menu == 'initial':
+            start_game, running = self.initial_menu.handle_input(events, mouse_pos, running, is_initial=True)
+            return start_game, running
+        elif self.current_menu == 'main':
             paused, running = self.main_menu.handle_input(events, paused, running, mouse_pos)
         elif self.current_menu == 'inventory':
+            if self.player is None:
+                print("Aviso: Player é None ao tentar acessar o menu de inventário. Retornando ao menu principal.")
+                self.current_menu = 'main'
+                self.main_menu.selected_item = 0
+                return paused, running
             # Handle input for spells or runes based on selected section
             if self.spells_section.selected_section == 'spells':
                 paused, running = self.spells_section.handle_input(events, paused, running, mouse_pos)
@@ -37,6 +51,7 @@ class Menu:
             # Handle ESC to return to main menu
             for event in events:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    print("Voltando ao menu principal do inventário via Esc")
                     self.current_menu = 'main'
                     self.main_menu.selected_item = 0
                     self.spells_section.selected_item = 0
@@ -44,6 +59,11 @@ class Menu:
                     self.runes_section.selected_item = 0
                     self.selected_spell = None
                     self.selected_rune = None
+        elif self.current_menu == 'controls':
+            print("Chamando handle_input para menu de controles")
+            # Ignora start_game, já que não é relevante para o menu de controles
+            _, running = self.initial_menu.handle_input(events, mouse_pos, running, is_initial=False)
+            paused = True  # Mantém o estado de pausa enquanto o menu de controles está ativo
 
         return paused, running
 
@@ -52,15 +72,27 @@ class Menu:
         overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 255) if self.current_menu == 'inventory' else (0, 0, 0, 180))
         self.screen.blit(overlay, (0, 0))
-
         mouse_pos = pygame.mouse.get_pos()
-        if self.current_menu == 'main':
+        if self.current_menu == 'initial':
+            self.initial_menu.draw(mouse_pos, is_initial=True)
+        elif self.current_menu == 'main':
             self.main_menu.draw(mouse_pos)
         elif self.current_menu == 'inventory':
+            if self.player is None:
+                print("Aviso: Player é None ao tentar desenhar o menu de inventário. Desenhando menu principal.")
+                self.current_menu = 'main'
+                self.main_menu.draw(mouse_pos)
+                return
+            overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 255))
+            self.screen.blit(overlay, (0, 0))
             self.spells_section.draw(mouse_pos)
             self.runes_section.draw(mouse_pos)
             self.description_section.draw(mouse_pos)
+            self.instruction_section.draw()
             # Draw "Voltar (ESC)" text
             back_text = self.font.render("Voltar (ESC)", True, (255, 255, 255))
             back_rect = back_text.get_rect(center=(self.width // 2, self.height // 2 + 350))
             self.screen.blit(back_text, back_rect)
+        elif self.current_menu == 'controls':
+            self.initial_menu.draw(mouse_pos, is_initial=False)

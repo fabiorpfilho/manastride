@@ -28,11 +28,10 @@ class RunesSection:
                 elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     self.selected_item = min(max_runes - 1, self.selected_item + 1)
                 elif event.key == pygame.K_RETURN:
-                    # Selecionar runa e delegar toda lógica para SpellSystem
+                    # Se um feitiço já está selecionado, vincular a runa ao feitiço
                     if self.menu.selected_spell is not None and self.selected_item < len(self.menu.player.spell_system.runes):
                         rune = self.menu.player.spell_system.runes[self.selected_item]
                         spell = self.menu.player.spell_system.spellbook[self.menu.selected_spell]
-
                         if rune.rune_type == RuneType.MAJOR:
                             self.menu.player.spell_system.update_spell(
                                 self.menu.selected_spell + 1,
@@ -45,9 +44,14 @@ class RunesSection:
                                 major_rune=spell.major_rune,
                                 minor_runes=[rune]
                             )
-
                         # Resetar seleção
                         self.menu.selected_spell = None
+                        self.menu.selected_rune = None
+                        self.menu.spells_section.selected_section = 'spells'
+                        self.selected_item = 0
+                    # Se nenhum feitiço está selecionado, selecionar a runa e mudar para a seção de feitiços
+                    elif self.selected_item < len(self.menu.player.spell_system.runes):
+                        self.menu.selected_rune = self.selected_item
                         self.menu.spells_section.selected_section = 'spells'
                         self.selected_item = 0
 

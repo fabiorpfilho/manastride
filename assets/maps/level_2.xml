@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="90" height="30" tilewidth="24" tileheight="24" infinite="0" nextlayerid="3" nextobjectid="9">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="90" height="30" tilewidth="24" tileheight="24" infinite="0" nextlayerid="3" nextobjectid="10">
  <tileset firstgid="1" name="oak_woods_tileset" tilewidth="24" tileheight="24" tilecount="315" columns="21">
   <image source="oak_woods_v1.0/oak_woods_tileset.png" width="504" height="360"/>
  </tileset>
@@ -39,8 +39,12 @@
 </data>
  </layer>
  <objectgroup id="2" name="objects">
-  <object id="6" name="level_1" type="door" x="0.621217" y="623.894" width="16.0909" height="47.5455"/>
   <object id="7" name="hammer_bot" type="spawn" x="341" y="639.833" width="22" height="31"/>
-  <object id="8" name="player" type="spawn" x="61.3333" y="641" width="20" height="30"/>
+  <object id="9" name="level_1" type="door" x="-0.378783" y="624.227" width="16.0909" height="47.5455">
+   <properties>
+    <property name="player_spawn_x" value="2111.25"/>
+    <property name="player_spawn_y" value="641.75"/>
+   </properties>
+  </object>
  </objectgroup>
 </map>

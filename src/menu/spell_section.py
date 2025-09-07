@@ -1,4 +1,3 @@
-
 import pygame
 from spell_system.rune_type import RuneType
 from config import RUNE_COLORS
@@ -24,9 +23,32 @@ class SpellsSection:
                 elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     self.selected_item = min(max_spells - 1, self.selected_item + 1)
                 elif event.key == pygame.K_RETURN:
-                    # Select spell and transition to runes section
-                    self.menu.selected_spell = self.selected_item
-                    self.selected_section = 'runes'
+                    # Se uma runa já está selecionada, vincular a runa ao feitiço
+                    if self.menu.selected_rune is not None and self.selected_item < len(self.menu.player.spell_system.spellbook):
+                        rune = self.menu.player.spell_system.runes[self.menu.selected_rune]
+                        spell = self.menu.player.spell_system.spellbook[self.selected_item]
+                        if rune.rune_type == RuneType.MAJOR:
+                            self.menu.player.spell_system.update_spell(
+                                self.selected_item + 1,
+                                major_rune=rune,
+                                minor_runes=spell.minor_runes
+                            )
+                        elif rune.rune_type == RuneType.MINOR:
+                            self.menu.player.spell_system.update_spell(
+                                self.selected_item + 1,
+                                major_rune=spell.major_rune,
+                                minor_runes=[rune]
+                            )
+                        # Resetar seleção
+                        self.menu.selected_spell = None
+                        self.menu.selected_rune = None
+                        self.selected_section = 'spells'
+                        self.selected_item = 0
+                    # Se nenhuma runa está selecionada, selecionar o feitiço e mudar para a seção de runas
+                    elif self.selected_item < len(self.menu.player.spell_system.spellbook):
+                        self.menu.selected_spell = self.selected_item
+                        self.selected_section = 'runes'
+
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 for i, rect in enumerate(self.menu_rects):
                     if rect.collidepoint(mouse_pos) and i < max_spells:

@@ -17,7 +17,7 @@ from ui.status_bar import StatusBar
 from ui.hotbar import HotBar
 
 class Level:
-    def __init__(self, screen, level_name):
+    def __init__(self, screen, level_name, player_spawn=None):
         self.screen = screen
         self.all_sprites = []
         self.player = None
@@ -61,38 +61,19 @@ class Level:
         )
         
         # Processar a camada de blocos
-        self._process_objects()  # Novo método para spawnar objetos do mapa
+        self._process_objects(player_spawn)  # Passar player_spawn para _process_objects
         self.all_sprites += self.dynamic_objects
         
         self._process_tilemap()
-        self._load_music(level_name)
             
         self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, world_width)
 
-    def _load_music(self, level_name):
-        # Caminho principal baseado no nome do level
-        music_path = f"assets/audio/soundtrack/{level_name}_theme.ogg"
-        fallback_path = "assets/audio/soundtrack/level_1_theme.ogg"
 
-        try:
-            pygame.mixer.music.load(music_path)
-            # print(f"🎵 Música carregada: {music_path}")
-        except Exception as e:
-            # print(f"⚠️ Erro ao carregar '{music_path}': {e}")
-            try:
-                pygame.mixer.music.load(fallback_path)
-                print(f"🎵 Música padrão carregada: {fallback_path}")
-            except Exception as fallback_error:
-                print(f"❌ Erro ao carregar música padrão '{fallback_path}': {fallback_error}")
-                return  # Se nem a padrão carregar, apenas sai
-
-        pygame.mixer.music.set_volume(0.5)
-        pygame.mixer.music.play(-1)
-
-    def _process_objects(self):
+    def _process_objects(self, player_spawn=None):
         """Processa a camada de objetos do mapa (player, inimigos, runas, portas etc)."""
         object_group = self.map_data.find("objectgroup[@name='objects']")
         if object_group is None:
+            print("Erro: Nenhuma camada de objetos 'objects' encontrada no mapa")
             return
 
         for obj in object_group.findall("object"):
@@ -114,17 +95,20 @@ class Level:
             if properties is not None:
                 for prop in properties.findall("property"):
                     if prop.get("name") == "player_spawn_x":
-                        # Substitui vírgula por ponto e converte para float
                         player_spawn_x = float(prop.get("value"))
                     elif prop.get("name") == "player_spawn_y":
-                        # Substitui vírgula por ponto e converte para float
                         player_spawn_y = float(prop.get("value"))
 
             if type_ == "spawn":
                 if name == "player":
-                    self.player = Player(position, size)
+                    # Use provided player_spawn if available, otherwise use map-defined position
+                    spawn_position = player_spawn if player_spawn is not None else position
+                    # Convert to Vector2 to ensure compatibility with Player class
+                    spawn_position = pygame.math.Vector2(spawn_position)
+                    self.player = Player(spawn_position, size)
                     self.player.spell_system = self.spell_system
                     self.dynamic_objects.append(self.player)
+                    print(f"Player spawned at: {spawn_position}")
                 elif name == "hammer_bot":
                     enemy = HammerBot(position, size)
                     self.enemies.append(enemy)
@@ -137,13 +121,18 @@ class Level:
             elif type_ == "door":
                 # Verifica se as propriedades de spawn foram encontradas
                 if player_spawn_x is not None and player_spawn_y is not None:
-                    player_spawn = (player_spawn_x, player_spawn_y)
-                    print(f"Player spawn: {player_spawn}")
-                    door = Door(position, size, name, player_spawn)
+                    door_spawn = (player_spawn_x, player_spawn_y)
+                    print(f"Player spawn for door {name}: {door_spawn}")
+                    door = Door(position, size, name, door_spawn)
                     self.static_objects.append(door)
                     self.all_sprites.append(door)  # apenas para debug, se desejar
                 else:
-                    print(f"Erro: Propriedades player_spawn_x e player_spawn_y não encontradas para a porta {name}")
+                    print(f"Aviso: Propriedades player_spawn_x e player_spawn_y não encontradas para a porta {name}. Usando spawn padrão.")
+                    default_spawn = (100, 300)  # Fallback spawn point
+                    door = Door(position, size, name, default_spawn)
+                    self.static_objects.append(door)
+                    self.all_sprites.append(door)  # apenas para debug, se desejar
+    
     def _process_tilemap(self):
         """Processa a camada de blocos do mapa Tiled."""
         layer = self.map_data.find("layer")
@@ -204,7 +193,6 @@ class Level:
         for obj in self.dynamic_objects:  # Cópia para remoção segura
               obj.draw_colliders_debug(self.screen, self.camera)
 
-
     def update(self, delta_time):
         if self.player.health <= 0:
             self.reset()
@@ -221,7 +209,7 @@ class Level:
                     obj.update(delta_time, self.static_objects)
             elif isinstance(obj, (Player)):
                 obj.update(delta_time)
-            elif isinstance(obj, Rune, ):
+            elif isinstance(obj, Rune):
                 if obj.marked_for_removal:
                     self.dynamic_objects.remove(obj)
                     self.all_sprites.remove(obj)
@@ -253,23 +241,17 @@ class Level:
                         self.dynamic_objects.append(shield)
                         self.all_sprites.append(shield)
 
-
         self.collision_manager.update(self.dynamic_objects)
         
         if self.collision_manager.door_triggered:
-
             print(f"Door triggered: {self.collision_manager.door_triggered}")
             door_triggered = self.collision_manager.door_triggered
-            target_map = door_triggered.target_map
-            player_spawn = door_triggered.player_spawn
-            # self._load_new_map(target_map, player_spawn)
+            target_map, player_spawn = door_triggered
+            self._load_new_map(target_map, player_spawn)
             return
-        
         
         self.camera.update(self.player)   
 
-        
-        
         # Atualizar os offsets do fundo com base no movimento da câmera
         for layer in self.background_layers:
             layer['offset_x'] = -self.camera.offset.x * layer['parallax_factor']
@@ -277,10 +259,10 @@ class Level:
 
     def reset(self):
         # Resetar o jogador
-        # self.player = Player((100, 300), (20, 30))
         self.player.health = 100
         self.player.mana = 100
-        self.player.position = (100, 300)
+        self.player.position = pygame.math.Vector2(100, 300)
+        self.player.sync_position()
 
         # Resetar o inimigo
         self.enemies = [HammerBot((300, 300), (22, 31))]
@@ -298,16 +280,16 @@ class Level:
 
     def _load_new_map(self, level_name, player_spawn):
         print(f"Trocando para o mapa: {level_name}")
+        print(f"Player spawn point: {player_spawn}")
 
         # Salvar dados importantes
         saved_score = self.score
-        saved_spellbook = self.player.spell_system.spellbook.copy()
-        # Salvar estado do player
-        saved_health = self.player.health
-        saved_mana = self.player.mana
+        saved_spellbook = self.player.spell_system.spellbook.copy() if self.player else []
+        saved_health = self.player.health if self.player else 100
+        saved_mana = self.player.mana if self.player else 100
 
-        # Recarrega tudo (vai sobrescrever self.player)
-        self.__init__(self.screen, level_name)
+        # Recarrega tudo, passando o player_spawn para o construtor
+        self.__init__(self.screen, level_name, player_spawn)
 
         # Restaurar dados
         self.score = saved_score
@@ -318,3 +300,5 @@ class Level:
             self.player.mana = saved_mana
             self.player.spell_system.spellbook = saved_spellbook
             self.player.sync_position()
+        else:
+            print("Erro: Player not initialized after loading new map")

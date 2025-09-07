@@ -18,23 +18,23 @@ class DescriptionSection:
             "multiple": "Múltipla",
         }
 
-        # Descrições base dos feitiços
+        # Descrições base dos feitiços (sem quebras de linha manuais)
         self.spell_descriptions = {
-            "Projectile": "Um projétil que causa\n dano no impacto.",
-            "Dash": "Avança rapidamente em\n uma direção.",
-            "Shield": "Gera um escudo que\n absorve uma pequena\n quantidade de dano.",
+            "Projectile": "Um projétil que causa dano no impacto.\n",
+            "Dash": "Avança rapidamente em uma direção.\n",
+            "Shield": "Gera um escudo que absorve uma pequena quantidade de dano.\n",
         }
 
-        # Descrições das runas
+        # Descrições das runas (sem quebras de linha manuais)
         self.rune_descriptions = {
-            "fan": "Atribui um comportamento\n de leque ao feitiço.",
-            "multiple": "Multiplica o feitiço\n em algum aspecto.",
+            "fan": "Atribui um comportamento de leque ao feitiço.",
+            "multiple": "Multiplica o feitiço em algum aspecto.",
         }
 
-        # Como cada runa altera a descrição do feitiço
+        # Como cada runa altera a descrição do feitiço (sem quebras de linha manuais)
         self.rune_spell_effects = {
-            "fan": "O feitiço é lançado em\n formato de leque.",
-            "multiple": "O feitiço é multiplicado em\n várias cópias.",
+            "fan": "O feitiço é lançado em formato de leque.",
+            "multiple": "O feitiço é multiplicado em várias cópias.",
         }
 
     def get_name(self, item, item_type):
@@ -50,11 +50,11 @@ class DescriptionSection:
         if item_type == "spell":
             base_desc = self.spell_descriptions.get(item.__class__.__name__, "Um feitiço misterioso sem descrição.")
 
-            # Se o feitiço tiver uma major_rune, adiciona a descrição da runa
+            # Se o feitiço tiver uma major_rune, adiciona a descrição da runa com \n para separação
             if hasattr(item, "major_rune") and item.major_rune is not None:
                 rune_name = getattr(item.major_rune, "name", None)
                 if rune_name and rune_name in self.rune_spell_effects:
-                    return f"{base_desc}\n\nRuna aplicada: {self.get_name(item.major_rune, 'rune')}\n{self.rune_spell_effects[rune_name]}"
+                    return f"{base_desc}\nRuna aplicada: {self.get_name(item.major_rune, 'rune')}\n{self.rune_spell_effects[rune_name]}"
             return base_desc
 
         elif item_type == "rune":
@@ -62,17 +62,39 @@ class DescriptionSection:
 
         return "Nenhum item selecionado."
 
+    def wrap_text(self, text, font, max_width):
+        """Quebra o texto em várias linhas com base na largura máxima."""
+        words = text.split(' ')
+        lines = []
+        current_line = ""
+
+        for word in words:
+            test_line = current_line + word + " "
+            test_surface = font.render(test_line, True, (255, 255, 255))
+            if test_surface.get_width() <= max_width:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line.strip())
+                current_line = word + " "
+        
+        if current_line:
+            lines.append(current_line.strip())
+        
+        return lines
+
     def draw(self, mouse_pos):
         center_x = self.menu.width // 2
         center_y = self.menu.height // 2
         description_size = (300, 400)
-        desc_offset_x = 400
+        desc_offset_x = 450
         desc_offset_y = -200
         desc_rect = pygame.Rect(center_x + desc_offset_x, center_y + desc_offset_y, description_size[0], description_size[1])
         pygame.draw.rect(self.menu.screen, (100, 100, 100), desc_rect, 2)
         desc_title = self.menu.font.render("Descrição", True, (255, 255, 255))
-        self.menu.screen.blit(desc_title, (center_x + desc_offset_x + 10, center_y + desc_offset_y + 10))
-
+        title_width = desc_title.get_width()
+        title_x = center_x + desc_offset_x + (description_size[0] - title_width) // 2  # Centraliza horizontalmente
+        self.menu.screen.blit(desc_title, (title_x, center_y + desc_offset_y + 10))
         # Determinar qual item está selecionado/hovered
         if self.hovered_item:
             section, idx = self.hovered_item
@@ -114,8 +136,14 @@ class DescriptionSection:
             else:
                 desc = "Nenhum item selecionado."
 
-        # Renderizar descrição em múltiplas linhas
-        desc_lines = desc.split('\n')
-        for i, line in enumerate(desc_lines):
-            desc_text = self.menu.font.render(line, True, (255, 255, 255))
-            self.menu.screen.blit(desc_text, (center_x + desc_offset_x + 10, center_y + desc_offset_y + 40 + i * 30))
+        # Renderizar descrição mantendo desc.split('\n')
+        max_text_width = description_size[0] - 20  # Margem de 10 pixels de cada lado
+        desc_lines = desc.split('\n')  # Mantém a separação por \n
+        y_offset = center_y + desc_offset_y + 40
+        for line in desc_lines:
+            # Aplicar quebra de texto automática para cada linha
+            wrapped_lines = self.wrap_text(line, self.menu.font, max_text_width)
+            for wrapped_line in wrapped_lines:
+                desc_text = self.menu.font.render(wrapped_line, True, (255, 255, 255))
+                self.menu.screen.blit(desc_text, (center_x + desc_offset_x + 10, y_offset))
+                y_offset += 30  # Incrementa o offset vertical para a próxima linha

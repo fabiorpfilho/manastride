@@ -224,7 +224,6 @@ class HammerBot(Character):
             self.set_animation(self.animation_manager.AnimationType.HURT)
             self.is_hurt = True
             self.colliders[2].active = False  # Disable body collider
-            self.colliders[0].active = False  
             self.is_attacking = False
             # Apply knockback
             knockback_strength = 150  # Adjust as needed
