@@ -11,6 +11,7 @@ class GameController:
         self.width = width
         self.height = height
         self.screen = pygame.display.set_mode((self.width, self.height))
+        self.starter_level = "level_2"
         pygame.display.set_caption(title)
 
         self.clock = pygame.time.Clock()
@@ -78,9 +79,9 @@ class GameController:
                 if start_game:
                     # Inicia o jogo ao selecionar "Start Game"
                     print("Iniciando o jogo")
-                    self.level = Level(self.screen, "level_1")
+                    self.level = Level(self.screen, self.starter_level)
                     self.menu.player = self.level.player  # Atualiza o player no menu
-                    self.current_level_name = "level_1"
+                    self.current_level_name = self.starter_level
                     self._load_music(self.current_level_name)  # Carrega a música do nível inicial
                     self.game_started = True
                 self.menu.draw()

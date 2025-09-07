@@ -111,6 +111,7 @@ class Player(Character):
                 self.dash_timer = 0
                 # Para o impulso do dash
                 self.speed_vector.x = 0
+                self.speed_vector.y = 0
                 
         if self.spell_cooldown_timer > 0:
             self.spell_cooldown_timer -= delta_time
@@ -154,8 +155,11 @@ class Player(Character):
                 self.speed_vector.x *= 0.8
                 if abs(self.speed_vector.x) < 0.1:
                     self.speed_vector.x = 0
-
+                    
         self.position.x += self.speed_vector.x * delta_time
+        # Permite movimento vertical durante o dash para que haja diagonal
+        if self.dash_timer > 0: 
+            self.position.y += self.speed_vector.y * delta_time
 
         if keys[pygame.K_SPACE] and self.on_ground:
             self.speed_vector.y = -(self.jump_speed + JUMP_SPEED)
@@ -322,32 +326,38 @@ class Player(Character):
             self.image.fill(self.sprite)
 
 
-    def handle_damage(self, enemy_damage, damage_source_position: None):
-        if self.invincibility_timer > 0:
-            return  # já está invencível
-        
+    def handle_damage(self, enemy_damage, damage_source_position: bool):
+            if self.invincibility_timer > 0:
+                return  # já está invencível
 
-        
-        self.invincibility_timer = self.invincibility_duration
-        self.flicker_timer = self.flicker_interval
-        self.visible = False
-        
-        if self.shield_health > 0:
-            self.shield_health -= enemy_damage
-            print(f"Escudo absorveu dano! Vida do escudo: {self.shield_health}")
-            if self.shield_health <= 0:
-                print("Escudo destruído!")
-            return
-        
-        
-        # Knockback leve
-        knockback_strength = 300  # ajuste conforme necessário
-        direction = 1 if damage_source_position else -1
-        self.speed_vector.x = direction * knockback_strength
-        self.speed_vector.y = -100  # empurrado levemente para cima também
+            self.invincibility_timer = self.invincibility_duration
+            self.flicker_timer = self.flicker_interval
+            self.visible = False
 
-        self.health -= enemy_damage
-        print(f"Sofreu dano! Vida restante: {self.health}")
+            # Verifica se há um Shield no spellbook[2] e se tem escudos ativos
+            if (2 < len(self.spell_system.spellbook) and 
+                self.spell_system.spellbook[2].shields):
+                shield = self.spell_system.spellbook[2].shields[0]  # Pega o primeiro escudo ativo
+                if shield.is_multiple:
+                    shield.handle_damage()  # Redireciona o dano ao escudo "multiple"
+                    return  # Dano absorvido, jogador não sofre
+
+            # Caso padrão: verifica shield_health para escudo não "multiple"
+            if self.shield_health > 0:
+                self.shield_health -= enemy_damage
+                print(f"Escudo absorveu dano! Vida do escudo: {self.shield_health}")
+                if self.shield_health <= 0:
+                    print("Escudo destruído!")
+                return
+            print("Damage source position:", damage_source_position)
+            # Knockback leve
+            knockback_strength = 300  # ajuste conforme necessário
+            direction = 1 if damage_source_position else -1
+            self.speed_vector.x = direction * knockback_strength
+            self.speed_vector.y = -100  # empurrado levemente para cima também
+
+            self.health -= enemy_damage
+            print(f"Sofreu dano! Vida restante: {self.health}")
 
 
 

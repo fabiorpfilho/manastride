@@ -83,6 +83,8 @@ class Projectile(Spell):
         handler = rune_handlers.get(self.major_rune.name if self.major_rune else "None")
         if handler:
             handler(base_data, owner)
+        self.current_cooldown = self.cooldown
+        return self.attributes["mana_cost"]
             
     def _handle_no_rune(self, base_data: ProjectileData, owner) -> None:
         """Cria um único projétil com atraso, semelhante ao Multiple."""

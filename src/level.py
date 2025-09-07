@@ -192,6 +192,7 @@ class Level:
         # Desenha colisores de debug
         for obj in self.dynamic_objects:  # Cópia para remoção segura
               obj.draw_colliders_debug(self.screen, self.camera)
+        
 
     def update(self, delta_time):
         if self.player.health <= 0:

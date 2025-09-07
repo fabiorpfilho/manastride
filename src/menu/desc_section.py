@@ -14,7 +14,7 @@ class DescriptionSection:
 
         # Traduções de nomes das runas
         self.rune_names = {
-            "fan": "Leque",
+            "fan": "Cone",
             "multiple": "Múltipla",
         }
 
@@ -27,13 +27,13 @@ class DescriptionSection:
 
         # Descrições das runas (sem quebras de linha manuais)
         self.rune_descriptions = {
-            "fan": "Atribui um comportamento de leque ao feitiço.",
+            "fan": "Atribui um comportamento de cone ao feitiço.",
             "multiple": "Multiplica o feitiço em algum aspecto.",
         }
 
         # Como cada runa altera a descrição do feitiço (sem quebras de linha manuais)
         self.rune_spell_effects = {
-            "fan": "O feitiço é lançado em formato de leque.",
+            "fan": "Varios projéteis se espalham em um cone à frente.",
             "multiple": "O feitiço é multiplicado em várias cópias.",
         }
 
