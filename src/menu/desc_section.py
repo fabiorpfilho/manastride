@@ -14,7 +14,7 @@ class DescriptionSection:
 
         # Traduções de nomes das runas
         self.rune_names = {
-            "fan": "Cone",
+            "fan": "Ramificação",
             "multiple": "Múltipla",
         }
 
@@ -27,14 +27,22 @@ class DescriptionSection:
 
         # Descrições das runas (sem quebras de linha manuais)
         self.rune_descriptions = {
-            "fan": "Atribui um comportamento de cone ao feitiço.",
+            "fan": "Faz o feitiço se ramificar em múltiplas direções ou formas.",
             "multiple": "Multiplica o feitiço em algum aspecto.",
         }
 
         # Como cada runa altera a descrição do feitiço (sem quebras de linha manuais)
         self.rune_spell_effects = {
-            "fan": "Varios projéteis se espalham em um cone à frente.",
-            "multiple": "O feitiço é multiplicado em várias cópias.",
+            "fan": (
+                "Projétil: vários projéteis se dispersam à frente.\n"
+                "Investida: permite avançar para cima ou na diagonal.\n"
+                "Escudo: gera uma barreira sólida que impede inimigos de atravessar."
+            ),
+            "multiple": (
+                "Projétil: Atira três projeteis um atras do outro.\n"
+                "Investida: Permite um curto avanço e vezes sem ativar recarga ou custo de mana por um pequeno periodo.\n"
+                "Escudo: Gera um escudo que absorve completamente os 3 proximos danos tomados."
+            ),
         }
 
     def get_name(self, item, item_type):
@@ -48,19 +56,37 @@ class DescriptionSection:
     def get_description(self, item, item_type):
         """Retorna a descrição personalizada para feitiço ou runa."""
         if item_type == "spell":
+            spell_name = self.get_name(item, "spell")
             base_desc = self.spell_descriptions.get(item.__class__.__name__, "Um feitiço misterioso sem descrição.")
 
-            # Se o feitiço tiver uma major_rune, adiciona a descrição da runa com \n para separação
+            # Se o feitiço tiver uma major_rune, adiciona a descrição da runa
             if hasattr(item, "major_rune") and item.major_rune is not None:
                 rune_name = getattr(item.major_rune, "name", None)
                 if rune_name and rune_name in self.rune_spell_effects:
-                    return f"{base_desc}\nRuna aplicada: {self.get_name(item.major_rune, 'rune')}\n{self.rune_spell_effects[rune_name]}"
+                    rune_effect_text = self.rune_spell_effects[rune_name]
+
+                    # Filtrar apenas a linha correspondente a este feitiço
+                    effect_lines = rune_effect_text.split("\n")
+                    spell_effect_line = ""
+                    for line in effect_lines:
+                        if line.startswith(spell_name + ":"):
+                            spell_effect_line = line.split(":", 1)[1].strip()
+                            break
+
+                    if spell_effect_line:
+                        return (
+                            f"{base_desc}\n"
+                            f"Runa aplicada: {self.get_name(item.major_rune, 'rune')}\n"
+                            f"{spell_effect_line}"
+                        )
+
             return base_desc
 
         elif item_type == "rune":
             return self.rune_descriptions.get(getattr(item, "name", "Runa"), "Uma runa misteriosa sem descrição.")
 
         return "Nenhum item selecionado."
+
 
     def wrap_text(self, text, font, max_width):
         """Quebra o texto em várias linhas com base na largura máxima."""

@@ -220,7 +220,11 @@ class Level:
                 if obj.marked_for_removal:
                     self.dynamic_objects.remove(obj)
                     self.all_sprites.remove(obj)
-
+                    
+        for obj in self.static_objects:
+            if hasattr(obj, "marked_for_removal") and obj.marked_for_removal:
+                self.static_objects.remove(obj)
+                self.all_sprites.remove(obj)
     
         player_pos = [self.player.position.x + self.player.size[0] / 2, 
                       self.player.position.y + self.player.size[1] / 2]
@@ -238,7 +242,11 @@ class Level:
                         self.all_sprites.append(proj)
             if hasattr(spell, "shields"):
                 for shield in spell.shields:
-                    if shield not in self.dynamic_objects:
+                    if spell.major_rune and spell.major_rune.name == "fan" and shield not in self.static_objects:
+                        self.static_objects.append(shield)
+                        self.all_sprites.append(shield)
+                         
+                    elif shield not in self.dynamic_objects:
                         self.dynamic_objects.append(shield)
                         self.all_sprites.append(shield)
 

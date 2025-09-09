@@ -40,9 +40,12 @@ class CollisionManager:
         for static in self.static_objects:
             for static_collider in static.colliders:
                 if dynamic_collider.rect.colliderect(static_collider.rect):
+                    if static_collider.type == "barrier" and dynamic_object.tag == "player":
+                        continue
                     if static_collider.type == "door" and dynamic_object.tag == "player":
                         self.door_triggered = (static.target_map, static.player_spawn)
                         continue
+                    
 
                     if dynamic_object.tag == "projectile":
                         print(f"Projétil {dynamic_object.name} colidiu com {static}!")
@@ -57,11 +60,13 @@ class CollisionManager:
                         if dynamic_object.rect.centerx < static_collider.rect.centerx:
                             dynamic_object.position.x -= largura_invasao + dynamic_collider.offset[0]
                             if "npc" in dynamic_object.tag:
-                                dynamic_object.facing_right = False
+                                if not (static_collider.type == "barrier" and dynamic_object.tag == "enemy_npc"):
+                                    dynamic_object.facing_right = False
                         else:
                             dynamic_object.position.x += largura_invasao + dynamic_collider.offset[0]
                             if "npc" in dynamic_object.tag:
-                                dynamic_object.facing_right = True
+                                if not (static_collider.type == "barrier" and dynamic_object.tag == "enemy_npc"):
+                                    dynamic_object.facing_right = True
                         dynamic_object.speed_vector.x = 0
                     else:
                         if dynamic_object.rect.centery < static_collider.rect.centery:

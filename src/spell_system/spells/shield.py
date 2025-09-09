@@ -1,5 +1,6 @@
 from spell_system.spell import Spell
 from spell_system.rune import Rune
+from objects.static_objects.barrier import Barrier
 from typing import List, Optional
 import pygame
 from objects.dynamic_objects.shield_instance import ShieldInstance
@@ -36,8 +37,9 @@ class Shield(Spell):
         self.owner = owner
         # Toca o som de ativação
         # self.shield_sfx.play()
-
         if self.shields:
+            if self.major_rune and self.major_rune.name == "fan":
+                return 0
             # Reseta a saúde e o timer do escudo existente
             if self.shields[0].health <= 0 or self.shields[0].marked_for_removal:
                 self.shields[0].health = self.attributes["health"] if not self.major_rune or self.major_rune.name == "None" else 3
@@ -65,7 +67,8 @@ class Shield(Spell):
 
         rune_handlers = {
             "None": self._handle_no_rune,
-            "multiple": self._handle_multiple_rune
+            "multiple": self._handle_multiple_rune,
+            "fan": self._handle_fan_rune 
         }
         print("Runa usada:", self.major_rune.name if self.major_rune else "None")
         handler = rune_handlers.get(self.major_rune.name if self.major_rune else "None")
@@ -96,6 +99,32 @@ class Shield(Spell):
         )
         self.shields.append(shield)
         # Não atualiza shield_health para "multiple"
+    
+    def _handle_fan_rune(self, base_data: ShieldData, base_position: tuple) -> None:
+        """Cria uma única barreira estática para a runa 'fan' que desaparece após a duração."""
+        # Tamanho da barreira
+        barrier_size = (10, 40)  # Mantido conforme fornecido
+
+        # Calcula a posição para alinhar o bottom da barreira com o bottom do jogador
+        offset_x = 20 if base_data.facing_right else -20
+        offset_y = -0  # Deslocamento para cima para "subir mais" a barreira
+        barrier_position = (
+            base_data.owner.position.x + offset_x,
+            base_data.owner.rect.bottom - barrier_size[1] + offset_y  # Alinha com o bottom e ajusta para cima
+        )
+
+        # Cria a barreira
+        barrier = Barrier(
+            position=barrier_position,
+            size=barrier_size,
+            duration=base_data.duration,  # Duração de 10 segundos
+            owner=base_data.owner,
+            facing_right=base_data.facing_right
+        )
+
+        # Adiciona a barreira à lista de escudos para gerenciamento
+        self.shields.append(barrier)
+        # Não atualiza owner.shield_health para runa "fan", conforme lógica existente
 
     def _create_shield(self, data: ShieldData, base_position: tuple) -> ShieldInstance:
         """Cria uma instância de escudo a partir dos dados fornecidos."""
@@ -111,7 +140,7 @@ class Shield(Spell):
         """Atualiza todos os escudos ativos e pendentes."""
         current_time = pygame.time.get_ticks()
 
-        # Spawn escudos pendentes (não usado para "multiple" agora)
+        # Spawn escudos pendentes (não usado para "fan" ou "multiple" agora)
         for pending in self.pending_shields[:]:
             if pending.spawn_time is None or current_time >= pending.spawn_time:
                 shield = self._create_shield(pending, (self.owner.position.x + (20 if self.owner.facing_right else -20), self.owner.position.y))
@@ -122,7 +151,11 @@ class Shield(Spell):
 
         # Atualizar escudos ativos
         for shield in self.shields[:]:
-            shield.update(delta_time, self.owner.shield_health, self.owner.on_ground)
+            # Chama update com argumentos apenas para ShieldInstance
+            if isinstance(shield, ShieldInstance):
+                shield.update(delta_time, self.owner.shield_health, self.owner.on_ground)
+            else:
+                shield.update(delta_time)  # Barrier não usa shield_health ou on_ground
             if shield.marked_for_removal:
                 self.shields.remove(shield)
                 if shield.owner:

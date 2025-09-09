@@ -8,6 +8,7 @@ class EntityWithAnimation(Object):
         super().__init__(position, size)
         self.sprite = sprite
         self.animation_manager = AnimationManager()
+        self.animation_timer = 0
         self.image.fill(self.sprite)  # Preenche com a cor padrão se não houver animação
         
                 

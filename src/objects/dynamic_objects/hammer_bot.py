@@ -17,7 +17,6 @@ class HammerBot(Character):
         self.tag = "enemy_npc"
         self.current_animation = None
         self.current_frame = 0
-        self.animation_timer = 0
         self.is_attacking = False
         self.attack_cooldown = 0.3
         self.marked_for_removal = False  # Para remoção após morte

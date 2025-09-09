@@ -15,7 +15,6 @@ class Player(Character):
         self.tag = "player"
         self.current_animation = None
         self.current_frame = 0
-        self.animation_timer = 0
 
 
         self.attack_sfx = {
@@ -327,38 +326,47 @@ class Player(Character):
 
 
     def handle_damage(self, enemy_damage, damage_source_position: bool):
-            if self.invincibility_timer > 0:
-                return  # já está invencível
+        if self.invincibility_timer > 0:
+            return  # Já está invencível
 
-            self.invincibility_timer = self.invincibility_duration
-            self.flicker_timer = self.flicker_interval
-            self.visible = False
+        self.invincibility_timer = self.invincibility_duration
+        self.flicker_timer = self.flicker_interval
+        self.visible = False
 
-            # Verifica se há um Shield no spellbook[2] e se tem escudos ativos
-            if (2 < len(self.spell_system.spellbook) and 
-                self.spell_system.spellbook[2].shields):
-                shield = self.spell_system.spellbook[2].shields[0]  # Pega o primeiro escudo ativo
-                if shield.is_multiple:
-                    shield.handle_damage()  # Redireciona o dano ao escudo "multiple"
+        # Verifica se há um Shield no spellbook[2]
+        try:
+            shield_spell = self.spell_system.spellbook[2]
+            print("Shield spell found:", shield_spell)
+        except IndexError:
+            print("Nenhum feitiço de escudo encontrado no spellbook[2]")
+            shield_spell = None
+
+        # Verifica se há escudos ativos e se não é a runa "fan"
+        if shield_spell and shield_spell.shields and (not shield_spell.major_rune or shield_spell.major_rune.name != "fan"):
+            shield = shield_spell.shields[0]  # Pega o primeiro escudo ativo
+            if hasattr(shield, 'is_multiple') and shield.is_multiple:
+                # Lida com dano para ShieldInstance com is_multiple=True (runa "multiple")
+                shield.handle_damage()
+                return  # Dano absorvido, jogador não sofre
+            else:
+                # Lida com dano para ShieldInstance sem is_multiple (runa "None")
+                if self.shield_health > 0:
+                    self.shield_health -= enemy_damage
+                    print(f"Escudo absorveu dano! Vida do escudo: {self.shield_health}")
+                    if self.shield_health <= 0:
+                        print("Escudo destruído!")
                     return  # Dano absorvido, jogador não sofre
 
-            # Caso padrão: verifica shield_health para escudo não "multiple"
-            if self.shield_health > 0:
-                self.shield_health -= enemy_damage
-                print(f"Escudo absorveu dano! Vida do escudo: {self.shield_health}")
-                if self.shield_health <= 0:
-                    print("Escudo destruído!")
-                return
-            print("Damage source position:", damage_source_position)
-            # Knockback leve
-            knockback_strength = 300  # ajuste conforme necessário
-            direction = 1 if damage_source_position else -1
-            self.speed_vector.x = direction * knockback_strength
-            self.speed_vector.y = -100  # empurrado levemente para cima também
+        # Caso padrão: aplica dano ao jogador se não houver escudo ou se for runa "fan"
+        print("Damage source position:", damage_source_position)
+        # Knockback leve
+        knockback_strength = 300  # Ajuste conforme necessário
+        direction = 1 if damage_source_position else -1
+        self.speed_vector.x = direction * knockback_strength
+        self.speed_vector.y = -100  # Empurrado levemente para cima também
 
-            self.health -= enemy_damage
-            print(f"Sofreu dano! Vida restante: {self.health}")
-
+        self.health -= enemy_damage
+        print(f"Sofreu dano! Vida restante: {self.health}")
 
 
     def handle_hit(self):

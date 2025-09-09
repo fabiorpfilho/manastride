@@ -51,4 +51,6 @@ class Collider:
             color = (0, 0, 255)
         elif self.type == 'item':
             color = (255, 255, 0)
+        elif self.type == 'barrier':
+            color = (255, 0, 255)
         pygame.draw.rect(surface, color, rect, 1)
