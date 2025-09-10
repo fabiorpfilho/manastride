@@ -27,15 +27,19 @@ class Level:
         self.background = [0, 0, 0]
         self.background_layers = []
         self.tile_size = 24 
-        self.score = 0  # Initialize score
-        
+        self.score = 0
         self.spell_system = SpellSystem()
         self.asset_loader = AssetLoader()
-
+        self.level_name = level_name  # Store the current level name
         self.status_bar = StatusBar(self.screen, self.asset_loader)
         self.score_ui = Score(self.screen, self.asset_loader)
         self.hotbar = HotBar(self.screen, self.asset_loader)
+        self.is_completed = False
 
+        self.load_map(level_name, player_spawn)
+
+    def load_map(self, level_name, player_spawn=None):
+        self.level_name = level_name  # Update level_name on load
         self.map_data = self.asset_loader.load_map_data(level_name)
         if self.map_data is None:
             return
@@ -46,11 +50,15 @@ class Level:
         self.map_width = int(self.map_data.get("width"))
         self.map_height = int(self.map_data.get("height"))
 
-        # Configurar a câmera com zoom inicial
         world_width = self.map_width * self.tile_width
         world_height = self.map_height * self.tile_height
-        self.camera = Camera(screen.get_size(), world_width,
-                             world_height, zoom=4.0)
+
+        # Atualizar a câmera com novas dimensões do mundo
+        if not hasattr(self, 'camera'):
+            self.camera = Camera(self.screen.get_size(), world_width, world_height, zoom=4.0)
+        else:
+            self.camera.world_width = world_width
+            self.camera.world_height = world_height
         
         # Carregar o tileset
         self.tileset = self.asset_loader.load_tileset(self.map_data)
@@ -60,14 +68,22 @@ class Level:
             camera_zoom=self.camera.zoom
         )
         
+        # Limpar objetos existentes (mantendo o player se já existir)
+        self.all_sprites = []
+        self.enemies = []
+        if self.player:
+            self.dynamic_objects = [self.player]
+        else:
+            self.dynamic_objects = []
+        self.static_objects = []
+        
         # Processar a camada de blocos
-        self._process_objects(player_spawn)  # Passar player_spawn para _process_objects
+        self._process_objects(player_spawn)
         self.all_sprites += self.dynamic_objects
         
         self._process_tilemap()
             
         self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, world_width)
-
 
     def _process_objects(self, player_spawn=None):
         """Processa a camada de objetos do mapa (player, inimigos, runas, portas etc)."""
@@ -101,38 +117,42 @@ class Level:
 
             if type_ == "spawn":
                 if name == "player":
-                    # Use provided player_spawn if available, otherwise use map-defined position
                     spawn_position = player_spawn if player_spawn is not None else position
-                    # Convert to Vector2 to ensure compatibility with Player class
                     spawn_position = pygame.math.Vector2(spawn_position)
-                    self.player = Player(spawn_position, size)
-                    self.player.spell_system = self.spell_system
-                    self.dynamic_objects.append(self.player)
-                    print(f"Player spawned at: {spawn_position}")
+                    if self.player is None:
+                        self.player = Player(spawn_position, size)
+                        self.player.spell_system = self.spell_system
+                        self.dynamic_objects.append(self.player)
+                    else:
+                        self.player.position = spawn_position
+                        self.player.sync_position()
+                    print(f"Player positioned at: {spawn_position}")
                 elif name == "hammer_bot":
                     enemy = HammerBot(position, size)
                     self.enemies.append(enemy)
                     self.dynamic_objects.append(enemy)
             elif type_ == "rune":
+                # Check if the rune is already in the player's inventory
+                if self.player and any(rune.name == name for rune in self.player.spell_system.runes):
+                    print(f"Runa '{name}' já coletada, não será adicionada ao mapa.")
+                    continue  # Skip adding the rune if it's already collected
                 image = self.asset_loader.load_image(f"assets/runes/asset32x32/{name}.png")
                 rune = Rune(position, size, name, image, "major", 10)
                 self.dynamic_objects.append(rune)
                 print(f"Runa '{name}' adicionada na posição {position}")
             elif type_ == "door":
-                # Verifica se as propriedades de spawn foram encontradas
                 if player_spawn_x is not None and player_spawn_y is not None:
                     door_spawn = (player_spawn_x, player_spawn_y)
                     print(f"Player spawn for door {name}: {door_spawn}")
                     door = Door(position, size, name, door_spawn)
                     self.static_objects.append(door)
-                    self.all_sprites.append(door)  # apenas para debug, se desejar
+                    self.all_sprites.append(door)
                 else:
                     print(f"Aviso: Propriedades player_spawn_x e player_spawn_y não encontradas para a porta {name}. Usando spawn padrão.")
-                    default_spawn = (100, 300)  # Fallback spawn point
+                    default_spawn = (100, 300)
                     door = Door(position, size, name, default_spawn)
                     self.static_objects.append(door)
-                    self.all_sprites.append(door)  # apenas para debug, se desejar
-    
+                    self.all_sprites.append(door)
     def _process_tilemap(self):
         """Processa a camada de blocos do mapa Tiled."""
         layer = self.map_data.find("layer")
@@ -156,30 +176,23 @@ class Level:
                         )
                         self.all_sprites.append(platform)
                         self.static_objects.append(platform)
-                        # print(f"Plataforma adicionada: <rect({x}, {y}, {self.tile_width}, {self.tile_height})>")
 
     def draw(self):
         self.screen.fill(self.background)
-        # Desenha as camadas de fundo com parallax
         screen_width, screen_height = self.screen.get_size()
         for layer in self.background_layers:
             surface = layer['surface']
             offset_x = (layer['offset_x'] % surface.get_width()) - surface.get_width()
             offset_y = (layer['offset_y'] % surface.get_height()) - surface.get_height()
-            # Desenhar cópias suficientes para cobrir a tela
             for x in range(0, screen_width + surface.get_width(), surface.get_width()):
                 for y in range(0, screen_height + surface.get_height(), surface.get_height()):
                     self.screen.blit(surface, (offset_x + x, offset_y + y))
 
-        # Desenha todos os sprites com o offset da câmera e zoom
         for sprite in self.all_sprites:
-            # if isinstance(sprite, Rune):  # Verifica se é um sprite válido
-            #     print(f"Desenhando sprite: {sprite.tag} na posição {sprite.position}")
             offset_rect = self.camera.apply(sprite.rect)
             scaled_image = self.camera.apply_surface(sprite.image)
             self.screen.blit(scaled_image, offset_rect)
 
-        # Desenha os feitiços
         for spell in self.player.spell_system.spellbook:
             spell.draw(self.screen, self.camera)
             
@@ -189,17 +202,14 @@ class Level:
 
         self.score_ui.draw(self.score)
 
-        # Desenha colisores de debug
-        for obj in self.dynamic_objects:  # Cópia para remoção segura
-              obj.draw_colliders_debug(self.screen, self.camera)
-        
+        for obj in self.dynamic_objects:
+            obj.draw_colliders_debug(self.screen, self.camera)
 
     def update(self, delta_time):
         if self.player.health <= 0:
             self.reset()
 
-        # Atualizar objetos dinâmicos
-        for obj in self.dynamic_objects[:]:  # Cópia para remoção segura
+        for obj in self.dynamic_objects[:]:
             if isinstance(obj, HammerBot):
                 if obj.marked_for_removal:
                     self.score += 100
@@ -208,7 +218,7 @@ class Level:
                     self.enemies.remove(obj)
                 else:
                     obj.update(delta_time, self.static_objects)
-            elif isinstance(obj, (Player)):
+            elif isinstance(obj, Player):
                 obj.update(delta_time)
             elif isinstance(obj, Rune):
                 if obj.marked_for_removal:
@@ -220,18 +230,12 @@ class Level:
                 if obj.marked_for_removal:
                     self.dynamic_objects.remove(obj)
                     self.all_sprites.remove(obj)
-                    
-        for obj in self.static_objects:
-            if hasattr(obj, "marked_for_removal") and obj.marked_for_removal:
-                self.static_objects.remove(obj)
-                self.all_sprites.remove(obj)
     
         player_pos = [self.player.position.x + self.player.size[0] / 2, 
                       self.player.position.y + self.player.size[1] / 2]
         
         self.player.spell_system.update(delta_time, player_pos)
 
-        # Certifique-se de que todos os projéteis e escudos ativos estão no dynamic_objects / all_sprites
         for spell in self.player.spell_system.spellbook:
             if not spell:
                 continue
@@ -245,69 +249,49 @@ class Level:
                     if spell.major_rune and spell.major_rune.name == "fan" and shield not in self.static_objects:
                         self.static_objects.append(shield)
                         self.all_sprites.append(shield)
-                         
                     elif shield not in self.dynamic_objects:
                         self.dynamic_objects.append(shield)
                         self.all_sprites.append(shield)
 
         self.collision_manager.update(self.dynamic_objects)
         
+        # Check for game completion conditions in level_2
+        if self.level_name == "level_2":
+            # Condition 1: Transition to level_3
+            if self.collision_manager.door_triggered:
+                target_map, player_spawn = self.collision_manager.door_triggered
+                if target_map == "level_3":
+                    print("Level_2 completed: Transition to level_3 detected")
+                    self.is_completed = True
+                    return None  # Prevent level transition
+            # Condition 2: No more HammerBot enemies
+            if not any(isinstance(obj, HammerBot) for obj in self.dynamic_objects):
+                print("Level_2 completed: No more HammerBot enemies")
+                self.is_completed = True
+                return None
+        
         if self.collision_manager.door_triggered:
             print(f"Door triggered: {self.collision_manager.door_triggered}")
             door_triggered = self.collision_manager.door_triggered
             target_map, player_spawn = door_triggered
-            self._load_new_map(target_map, player_spawn)
+            self.load_map(target_map, player_spawn)
             return
         
         self.camera.update(self.player)   
 
-        # Atualizar os offsets do fundo com base no movimento da câmera
         for layer in self.background_layers:
             layer['offset_x'] = -self.camera.offset.x * layer['parallax_factor']
             layer['offset_y'] = -self.camera.offset.y * layer['parallax_factor']
 
     def reset(self):
-        # Resetar o jogador
         self.player.health = 100
         self.player.mana = 100
         self.player.position = pygame.math.Vector2(100, 300)
         self.player.sync_position()
-
-        # Resetar o inimigo
         self.enemies = [HammerBot((300, 300), (22, 31))]
         self.dynamic_objects = [self.player] + self.enemies
         self.all_sprites = self.static_objects + self.dynamic_objects
-
         self.score = 0
-
-        # Resetar câmera
         self.camera.target = self.player
         self.camera.offset = Vector2(0, 0)
-
-        # Resetar colisores
         self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, self.map_width * self.tile_width)
-
-    def _load_new_map(self, level_name, player_spawn):
-        print(f"Trocando para o mapa: {level_name}")
-        print(f"Player spawn point: {player_spawn}")
-
-        # Salvar dados importantes
-        saved_score = self.score
-        saved_spellbook = self.player.spell_system.spellbook.copy() if self.player else []
-        saved_health = self.player.health if self.player else 100
-        saved_mana = self.player.mana if self.player else 100
-
-        # Recarrega tudo, passando o player_spawn para o construtor
-        self.__init__(self.screen, level_name, player_spawn)
-
-        # Restaurar dados
-        self.score = saved_score
-
-        # Restaurar estado do novo player
-        if self.player:
-            self.player.health = saved_health
-            self.player.mana = saved_mana
-            self.player.spell_system.spellbook = saved_spellbook
-            self.player.sync_position()
-        else:
-            print("Erro: Player not initialized after loading new map")

@@ -16,16 +16,16 @@ class GameController:
 
         self.clock = pygame.time.Clock()
         self.running = True
-        self.paused = False  # Estado de pausa
-        self.game_started = False  # Estado para controlar se o jogo começou
+        self.paused = False
+        self.game_started = False
+        self.game_ended = False  # Estado para controlar a tela de fim de jogo
         self.last_time = time.perf_counter()
-        self.menu = Menu(self.screen, self.width, self.height, None)  # Inicializa sem player até o jogo começar
-        self.current_level_name = None  # Rastreia o nível atual para carregar música
-        self._load_music("menu")  # Carrega a música do menu inicial
+        self.menu = Menu(self.screen, self.width, self.height, None)
+        self.current_level_name = None
+        self._load_music("menu")
 
     def _load_music(self, level_name):
         """Carrega e toca a música do nível especificado ou do menu."""
-        # Caminho principal baseado no nome do level ou menu
         music_path = f"assets/audio/soundtrack/{level_name}_theme.ogg"
         fallback_path = "assets/audio/soundtrack/level_1_theme.ogg"
 
@@ -39,7 +39,7 @@ class GameController:
                 print(f"🎵 Música padrão carregada: {fallback_path}")
             except Exception as fallback_error:
                 print(f"❌ Erro ao carregar música padrão '{fallback_path}': {fallback_error}")
-                return  # Se nem a padrão carregar, apenas sai
+                return
 
         pygame.mixer.music.set_volume(0.5)
         pygame.mixer.music.play(-1)
@@ -50,7 +50,6 @@ class GameController:
             delta_time = (current_time - self.last_time)
             self.last_time = current_time
 
-            # Coleta eventos uma vez
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
 
@@ -59,49 +58,65 @@ class GameController:
                     self.running = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        if self.game_started:
+                        if self.game_ended:
+                            print("Tecla ESC pressionada na tela de fim - saindo do jogo")
+                            self.running = False
+                        elif self.game_started:
                             print("Tecla ESC pressionada - alternando pausa")
-                            self.paused = not self.paused  # Alterna o estado de pausa
+                            self.paused = not self.paused
                             if not self.paused:
                                 print("Jogo retomado")
                                 self.menu.selected_menu_item = 0
-                                self.menu.current_menu = 'main'  # Garante menu principal ao resumir
+                                self.menu.current_menu = 'main'
                             else:
-                                self.menu.current_menu = 'main'  # Garante menu principal ao pausar
+                                self.menu.current_menu = 'main'
                         else:
                             print("Tecla ESC pressionada no menu inicial - saindo do jogo")
                             self.running = False
 
-            if not self.game_started:
-                # Mostra o menu inicial
+            if self.game_ended:
+                self.menu.current_menu = 'end'
+                action = self.menu.game_end.update(events)
+                if action == "Reiniciar":
+                    print("Reiniciando o jogo")
+                    self.game_ended = False
+                    self.game_started = False
+                    self.menu.current_menu = 'initial'
+                    self._load_music("menu")
+                elif action == "Sair":
+                    print("Saindo do jogo")
+                    self.running = False
+                self.menu.draw()
+            elif not self.game_started:
                 self.menu.current_menu = 'initial'
                 start_game, self.running = self.menu.handle_input(events, False, self.running, mouse_pos)
                 if start_game:
-                    # Inicia o jogo ao selecionar "Start Game"
                     print("Iniciando o jogo")
                     self.level = Level(self.screen, self.starter_level)
-                    self.menu.player = self.level.player  # Atualiza o player no menu
+                    self.menu.player = self.level.player
                     self.current_level_name = self.starter_level
-                    self._load_music(self.current_level_name)  # Carrega a música do nível inicial
+                    self._load_music(self.current_level_name)
                     self.game_started = True
                 self.menu.draw()
             else:
                 if self.paused:
-                    # Passa os eventos e estados para o menu processar
                     self.paused, self.running = self.menu.handle_input(events, self.paused, self.running, mouse_pos)
                 else:
-                    new_level_data = self.level.update(delta_time)  # Atualiza o jogo
-                    if new_level_data:  # Verifica se há um novo nível a carregar
+                    new_level_data = self.level.update(delta_time)
+                    if new_level_data:
                         level_name, player_spawn = new_level_data
                         print(f"Carregando novo nível: {level_name}")
                         self.level = Level(self.screen, level_name, player_spawn)
-                        self.menu.player = self.level.player  # Atualiza o player no menu
+                        self.menu.player = self.level.player
                         self.current_level_name = level_name
-                        self._load_music(self.current_level_name)  # Carrega a música do novo nível
-                self.level.draw()  # Sempre desenha o nível para manter o estado visual
+                        self._load_music(self.current_level_name)
+                    # Simula fim de jogo para teste (pode ser removido ou ajustado)
+                    if self.level.is_completed:  # Supondo que Level tenha um atributo is_completed
+                        self.game_ended = True
+                self.level.draw()
 
                 if self.paused:
-                    self.menu.draw()  # Desenha o menu de pausa
+                    self.menu.draw()
 
             pygame.display.flip()
 

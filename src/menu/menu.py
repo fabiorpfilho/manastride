@@ -5,6 +5,7 @@ from menu.spell_section import SpellsSection
 from menu.rune_section import RunesSection 
 from menu.initial_menu import InitialMenu
 from menu.instruction_section import InstructionSection
+from menu.game_end import GameEnd
 
 class Menu:
     def __init__(self, screen, width, height, player):
@@ -13,19 +14,19 @@ class Menu:
         self.height = height
         self.font = pygame.font.SysFont('arial', 24)
         self.player = player
-        self.current_menu = 'initial'  # Começa com o menu inicial
+        self.current_menu = 'initial'
         self.icon_cache = {}
-        self.selected_spell = None  # Index of selected spell (0, 1, or 2)
-        self.selected_rune = None   # Index of selected rune
-        self.selected_menu_item = 0  # Para navegação no menu inicial e pausa
+        self.selected_spell = None
+        self.selected_rune = None
+        self.selected_menu_item = 0
         
-        # Initialize section classes
         self.main_menu = MainMenu(self)
         self.spells_section = SpellsSection(self)
         self.runes_section = RunesSection(self)
         self.description_section = DescriptionSection(self)
         self.instruction_section = InstructionSection(self)
-        self.initial_menu = InitialMenu(self)  # Nova classe para menus inicial e de controles
+        self.initial_menu = InitialMenu(self)
+        self.game_end = GameEnd(self)
 
     def handle_input(self, events, paused, running, mouse_pos=None):
         """Processa entrada e coordena entre as seções."""
@@ -43,12 +44,10 @@ class Menu:
                 self.current_menu = 'main'
                 self.main_menu.selected_item = 0
                 return paused, running
-            # Handle input for spells or runes based on selected section
             if self.spells_section.selected_section == 'spells':
                 paused, running = self.spells_section.handle_input(events, paused, running, mouse_pos)
             else:
                 paused, running = self.runes_section.handle_input(events, paused, running, mouse_pos)
-            # Handle ESC to return to main menu
             for event in events:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     print("Voltando ao menu principal do inventário via Esc")
@@ -61,9 +60,10 @@ class Menu:
                     self.selected_rune = None
         elif self.current_menu == 'controls':
             print("Chamando handle_input para menu de controles")
-            # Ignora start_game, já que não é relevante para o menu de controles
             _, running = self.initial_menu.handle_input(events, mouse_pos, running, is_initial=False)
-            paused = True  # Mantém o estado de pausa enquanto o menu de controles está ativo
+            paused = True
+        elif self.current_menu == 'end':
+            paused = True
 
         return paused, running
 
@@ -90,9 +90,10 @@ class Menu:
             self.runes_section.draw(mouse_pos)
             self.description_section.draw(mouse_pos)
             self.instruction_section.draw()
-            # Draw "Voltar (ESC)" text
             back_text = self.font.render("Voltar (ESC)", True, (255, 255, 255))
             back_rect = back_text.get_rect(center=(self.width // 2, self.height // 2 + 350))
             self.screen.blit(back_text, back_rect)
         elif self.current_menu == 'controls':
             self.initial_menu.draw(mouse_pos, is_initial=False)
+        elif self.current_menu == 'end':
+            self.game_end.draw()

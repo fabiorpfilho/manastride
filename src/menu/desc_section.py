@@ -14,7 +14,7 @@ class DescriptionSection:
 
         # Traduções de nomes das runas
         self.rune_names = {
-            "fan": "Ramificação",
+            "fan": "Raiz",
             "multiple": "Múltipla",
         }
 
@@ -27,7 +27,7 @@ class DescriptionSection:
 
         # Descrições das runas (sem quebras de linha manuais)
         self.rune_descriptions = {
-            "fan": "Faz o feitiço se ramificar em múltiplas direções ou formas.",
+            "fan": "Permite que o feitiço se espalhe como as raizes de uma árvore.",
             "multiple": "Multiplica o feitiço em algum aspecto.",
         }
 

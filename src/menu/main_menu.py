@@ -3,7 +3,7 @@ from config import HIGHLIGHT_COLOR, BUTTON_COLOR
 class MainMenu:
     def __init__(self, menu):
         self.menu = menu
-        self.menu_items = ["Continuar", "Feitiços e Runas", "Controles", "Sair"]
+        self.menu_items = ["Continuar", "Feitiços e Runas", "Controles", "Tela de Fim", "Sair"]
         self.selected_item = 0
         self.menu_rects = []
         self.hovered_item = None
@@ -29,7 +29,11 @@ class MainMenu:
                     elif self.selected_item == 2:  # Controls
                         self.menu.current_menu = 'controls'
                         self.selected_item = 0
-                    elif self.selected_item == 3:  # Exit
+                    elif self.selected_item == 3:
+                        print("Exibindo tela de fim para teste")
+                        self.menu.current_menu = 'end'
+                        self.selected_item = 0
+                    elif self.selected_item == 4:  # Exit
                         running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 for i, rect in enumerate(self.menu_rects):

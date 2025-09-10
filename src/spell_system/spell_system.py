@@ -35,6 +35,7 @@ class SpellSystem:
             print(f"Nenhum feitiço no índice {index}")
 
     def add_rune(self, rune: Rune):
+        print(f"Adicionando a runa {rune}")
         """Add a new rune to the system."""
         self.runes.append(rune)
 
