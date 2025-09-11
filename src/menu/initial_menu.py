@@ -13,7 +13,7 @@ class InitialMenu:
             "Controles:",
             "Movimentação - Setas",
             "Pulo - Espaço",
-            "Ataque Corpo a Corpo - Z",
+            "Ataque Corpo a Corpo - Q",
             "Projétil - 1",
             "Avanço - 2",
             "Escudo - 3",

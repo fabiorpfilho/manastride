@@ -35,10 +35,12 @@ class Level:
         self.score_ui = Score(self.screen, self.asset_loader)
         self.hotbar = HotBar(self.screen, self.asset_loader)
         self.is_completed = False
+    
 
         self.load_map(level_name, player_spawn)
 
     def load_map(self, level_name, player_spawn=None):
+        self.actual_map = level_name
         self.level_name = level_name  # Update level_name on load
         self.map_data = self.asset_loader.load_map_data(level_name)
         if self.map_data is None:
@@ -119,6 +121,8 @@ class Level:
                 if name == "player":
                     spawn_position = player_spawn if player_spawn is not None else position
                     spawn_position = pygame.math.Vector2(spawn_position)
+                    self.player_spawn = spawn_position
+                    
                     if self.player is None:
                         self.player = Player(spawn_position, size)
                         self.player.spell_system = self.spell_system
@@ -284,14 +288,14 @@ class Level:
             layer['offset_y'] = -self.camera.offset.y * layer['parallax_factor']
 
     def reset(self):
-        self.player.health = 100
-        self.player.mana = 100
-        self.player.position = pygame.math.Vector2(100, 300)
-        self.player.sync_position()
-        self.enemies = [HammerBot((300, 300), (22, 31))]
-        self.dynamic_objects = [self.player] + self.enemies
-        self.all_sprites = self.static_objects + self.dynamic_objects
-        self.score = 0
-        self.camera.target = self.player
-        self.camera.offset = Vector2(0, 0)
-        self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, self.map_width * self.tile_width)
+            self.player.health = 100
+            self.player.mana = 100
+            self.player.position = pygame.math.Vector2(100, 300)
+            self.player.sync_position()
+            self.enemies = [HammerBot((300, 300), (22, 31))]
+            self.dynamic_objects = [self.player] + self.enemies
+            self.all_sprites = self.static_objects + self.dynamic_objects
+            self.score = 0
+            self.camera.target = self.player
+            self.camera.offset = Vector2(0, 0)
+            self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, self.map_width * self.tile_width)

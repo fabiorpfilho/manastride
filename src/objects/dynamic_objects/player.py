@@ -165,7 +165,7 @@ class Player(Character):
             self.on_ground = False
 
     def handle_attack(self, keys):
-        if keys[pygame.K_z] and not self.is_casting and self.attack_cooldown_timer <= 0:
+        if keys[pygame.K_q] and not self.is_casting and self.attack_cooldown_timer <= 0:
             
             if self.last_attack is None or self.last_attack == self.animation_manager.AnimationType.ATTACK3:
                 self.set_animation(self.animation_manager.AnimationType.ATTACK1)
