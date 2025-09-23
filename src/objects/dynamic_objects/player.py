@@ -336,7 +336,6 @@ class Player(Character):
         # Verifica se há um Shield no spellbook[2]
         try:
             shield_spell = self.spell_system.spellbook[2]
-            print("Shield spell found:", shield_spell)
         except IndexError:
             print("Nenhum feitiço de escudo encontrado no spellbook[2]")
             shield_spell = None

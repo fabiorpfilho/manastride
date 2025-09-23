@@ -47,7 +47,6 @@
   </object>
   <object id="6" name="fan" type="rune" x="804" y="324.333" width="32" height="32"/>
   <object id="7" name="multiple" type="rune" x="661.333" y="83.3333" width="32" height="32"/>
-  <object id="13" name="player" type="spawn" x="75.2424" y="304.879" width="20" height="30"/>
   <object id="14" name="hammer_bot" type="spawn" x="337" y="304" width="22" height="31"/>
   <object id="17" name="hammer_bot" type="spawn" x="239" y="636.5" width="22" height="31"/>
   <object id="18" name="hammer_bot" type="spawn" x="764" y="638.5" width="22" height="31"/>
