@@ -165,6 +165,19 @@ class Level:
             if isinstance(obj, HammerBot):
                 if obj.marked_for_removal:
                     self.score += 100
+                    minor_rune = self.object_factory.create_object({
+                        'position': (obj.position.x, obj.position.y),
+                        'size': (11, 15),
+                        'name': 'minor_rune',
+                        'type': 'rune',
+                        'rune_type': 'minor'
+                    })
+                    print("HammberBot position:", obj.position)
+                    print("Minor rune created:", minor_rune)
+                    print(f"Dropping minor rune at {minor_rune.position}")
+                    self.dynamic_objects.append(minor_rune)
+                    self.all_sprites.append(minor_rune)
+                    
                     self.dynamic_objects.remove(obj)
                     self.enemies.remove(obj)
                 else:

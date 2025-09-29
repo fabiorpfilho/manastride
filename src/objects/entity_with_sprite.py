@@ -2,8 +2,8 @@
 import pygame
 from objects.base_object import Object
 from asset_loader import AssetLoader
+from objects.sprite import Sprite
 
-# from ... import Sprite
 
 class EntityWithSprite(Object):
     def __init__(self, position, size, image= None):

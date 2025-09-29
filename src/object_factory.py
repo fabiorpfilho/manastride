@@ -19,18 +19,30 @@ class ObjectFactory:
             ("door", None): self._create_door,
         }
 
-    def create_object(self, obj: Element, player_spawn=None):
-        """Cria um objeto com base nos dados do XML do Tiled, com player_spawn opcional."""
-        name = obj.get("name")
-        type_ = obj.get("type")
-        position = (float(obj.get("x", 0)), float(obj.get("y", 0)))
-        size = (float(obj.get("width", 0)), float(obj.get("height", 0)))
+    def create_object(self, obj, player_spawn=None):
+        """Cria um objeto com base nos dados do XML do Tiled ou em um dicionário."""
+        if isinstance(obj, Element):
+            # Caso o objeto seja um Element (Tiled XML)
+            name = obj.get("name")
+            type_ = obj.get("type")
+            position = (float(obj.get("x", 0)), float(obj.get("y", 0)))
+            size = (float(obj.get("width", 0)), float(obj.get("height", 0)))
 
-        properties = obj.find("properties")
-        props = {}
-        if properties is not None:
-            for prop in properties.findall("property"):
-                props[prop.get("name")] = prop.get("value")
+            properties = obj.find("properties")
+            props = {}
+            if properties is not None:
+                for prop in properties.findall("property"):
+                    props[prop.get("name")] = prop.get("value")
+        elif isinstance(obj, dict):
+            # Caso o objeto seja um dicionário
+            name = obj.get("name")
+            type_ = obj.get("type")
+            position = obj.get("position", (0, 0))
+            size = obj.get("size", (0, 0))
+            props = obj.get("properties", {})
+        else:
+            print(f"Erro: Tipo de objeto não suportado: {type(obj)}")
+            return None
 
         # Ignora criação de jogador se player_spawn for fornecido (será tratado em load_map)
         if type_ == "spawn" and name == "player" and player_spawn is not None:
@@ -44,7 +56,6 @@ class ObjectFactory:
 
     def _create_player(self, position, size, name, props, player_spawn=None):
         """Cria ou reposiciona o jogador, usando player_spawn ou props apenas na criação inicial."""
-        # Só usa props ou position se criando um novo jogador
         if self.player is None:
             spawn_position = Vector2(position)
             if "player_spawn_x" in props and "player_spawn_y" in props:
@@ -58,11 +69,21 @@ class ObjectFactory:
         return HammerBot(position, size)
 
     def _create_rune(self, position, size, name, props, player_spawn=None):
+        """Cria uma runa, com tipo definido em props ou padrão 'major'."""
+        rune_type = props.get("type", "major")  # Obtém o tipo da runa, padrão é 'major'
         if self.player and any(rune.name == name for rune in self.player.spell_system.runes):
             print(f"Runa '{name}' já coletada, não adicionada.")
             return None
-        image = self.asset_loader.load_image(f"assets/runes/asset32x32/{name}.png")
-        return Rune(position, size, name, image, "major", 10)
+        image = None
+        if rune_type == "minor":
+            image = self.asset_loader.load_image("assets/runes/asset32x32/minor_rune.png")
+            print("Imagem da runa menor carregada.")
+        else:
+            image = self.asset_loader.load_image(f"assets/runes/asset32x32/{name}.png")
+        if image is None:
+            print(f"Erro: Não foi possível carregar a imagem para a runa '{name}'")
+            return None
+        return Rune(position, size, name, image, rune_type, 10)
 
     def _create_door(self, position, size, name, props, player_spawn=None):
         door_spawn = (float(props.get("player_spawn_x", 100)), float(props.get("player_spawn_y", 300)))
