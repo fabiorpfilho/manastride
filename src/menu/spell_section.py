@@ -120,13 +120,13 @@ class SpellsSection:
             pygame.draw.polygon(self.menu.screen, (255, 255, 255), losango_points, 1)
 
             # Draw circles for minor runes
-            # minor_rune_colors = [(0, 0, 0), (0, 0, 0)]
-            # if i < len(spellbook):
-            #     for j, rune in enumerate(spellbook[i].minor_runes[:2]):
-            #         minor_rune_colors[j] = RUNE_COLORS.get(rune.name, (0, 0, 0))
-            # pygame.draw.circle(self.menu.screen, minor_rune_colors[0], (cell_x + cell_size // 4, cell_y + cell_size - 3), 5)
-            # pygame.draw.circle(self.menu.screen, (255, 255, 255), (cell_x + cell_size // 4, cell_y + cell_size - 3), 5, 1)
-            # pygame.draw.circle(self.menu.screen, minor_rune_colors[1], (cell_x + 3 * cell_size // 4, cell_y + cell_size - 3), 5)
-            # pygame.draw.circle(self.menu.screen, (255, 255, 255), (cell_x + 3 * cell_size // 4, cell_y + cell_size - 3), 5, 1)
+            minor_rune_colors = [(0, 0, 0), (0, 0, 0)]
+            if i < len(spellbook):
+                for j, rune in enumerate(spellbook[i].minor_runes[:2]):
+                    minor_rune_colors[j] = RUNE_COLORS.get("fire_rune", (0, 0, 0))
+            pygame.draw.circle(self.menu.screen, minor_rune_colors[0], (cell_x + cell_size // 4, cell_y + cell_size - 3), 5)
+            pygame.draw.circle(self.menu.screen, (255, 255, 255), (cell_x + cell_size // 4, cell_y + cell_size - 3), 5, 1)
+            pygame.draw.circle(self.menu.screen, minor_rune_colors[1], (cell_x + 3 * cell_size // 4, cell_y + cell_size - 3), 5)
+            pygame.draw.circle(self.menu.screen, (255, 255, 255), (cell_x + 3 * cell_size // 4, cell_y + cell_size - 3), 5, 1)
 
             self.menu_rects.append(cell_rect)

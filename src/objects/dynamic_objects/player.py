@@ -193,6 +193,7 @@ class Player(Character):
                     if self.mana >= spell.mana_cost:
                         direction = 1 if self.facing_right else -1
                         mana_cost = self.spell_system.cast_spell(index, direction , self)
+                        print(f"Feitiço lançado: {spell.__class__.__name__}, custo de mana: {mana_cost}")
                         self.mana -= mana_cost
                         self.spell_cooldown_timer = self.spell_cooldown
                         self.set_animation(self.animation_manager.AnimationType.CASTING)

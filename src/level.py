@@ -1,9 +1,5 @@
-import pygame
-import json
 import xml.etree.ElementTree as ET
-import os
-from objects.static_objects.terrain import Terrain
-from objects.static_objects.door import Door
+import random
 from objects.dynamic_objects.rune import Rune
 from objects.dynamic_objects.player import Player
 from objects.dynamic_objects.hammer_bot import HammerBot
@@ -38,6 +34,19 @@ class Level:
         self.is_completed = False
         self.object_factory = ObjectFactory(self.asset_loader, self.spell_system, self.player)
         self.current_spawn = None
+        self.minor_rune_effects = [
+            {"power": 5},  # Aumenta o poder
+            {"cost": -10},  # Reduz o custo
+            {"cooldown": -5},  # Reduz a recarga
+            {"power": 15, "cost": 10},  # Aumenta o poder, mas aumenta o custo
+            {"cooldown": 10, "cost": -8},  # Aumenta a recarga, mas reduz o custo
+            {"power": 10, "cooldown": 8},  # Aumenta o poder, mas aumenta a recarga
+            {"power": -5, "cooldown": -10},  # Reduz o poder, mas reduz a recarga
+            {"cost": -5, "cooldown": -5, "power": -8}  # Reduz custo e recarga, mas reduz o poder
+        ]
+        # Listas para rastrear efeitos usados
+        self.available_effects = self.minor_rune_effects.copy()
+        self.used_effects = []
 
         self.load_map(level_name)
 
@@ -165,19 +174,7 @@ class Level:
             if isinstance(obj, HammerBot):
                 if obj.marked_for_removal:
                     self.score += 100
-                    minor_rune = self.object_factory.create_object({
-                        'position': (obj.position.x, obj.position.y),
-                        'size': (11, 15),
-                        'name': 'minor_rune',
-                        'type': 'rune',
-                        'rune_type': 'minor'
-                    })
-                    print("HammberBot position:", obj.position)
-                    print("Minor rune created:", minor_rune)
-                    print(f"Dropping minor rune at {minor_rune.position}")
-                    self.dynamic_objects.append(minor_rune)
-                    self.all_sprites.append(minor_rune)
-                    
+                    self.generate_minor_rune(obj)
                     self.dynamic_objects.remove(obj)
                     self.enemies.remove(obj)
                 else:
@@ -240,6 +237,29 @@ class Level:
         for layer in self.background_layers:
             layer['offset_x'] = -self.camera.offset.x * layer['parallax_factor']
             layer['offset_y'] = -self.camera.offset.y * layer['parallax_factor']
+            
+
+            
+    def generate_minor_rune(self, obj):
+        """Gera uma runa menor com um efeito aleatório, evitando repetição até que todos sejam usados."""
+        if not self.available_effects:
+            # Se todos os efeitos foram usados, reinicia a lista
+            self.available_effects = self.used_effects.copy()
+            self.used_effects = []
+        effect = random.choice(self.available_effects)
+        self.available_effects.remove(effect)
+        self.used_effects.append(effect)
+        minor_rune = self.object_factory.create_object({
+            'position': (obj.position.x + (obj.size[0] / 2), obj.position.y),
+            'size': (11, 15),
+            'name': 'Runa menor',
+            'type': 'rune',
+            'rune_type': 'minor',
+            'effect': effect
+        })
+        if minor_rune:  # Verifica se a runa foi criada com sucesso
+            self.dynamic_objects.append(minor_rune)
+            self.all_sprites.append(minor_rune)
 
     def reset(self):
         self.player.health = 100

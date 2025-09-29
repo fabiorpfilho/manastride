@@ -92,7 +92,10 @@ class RunesSection:
 
             if i < len(runes):
                 rune = runes[i]
-                rune_name = rune.name if hasattr(rune, 'name') else 'runa'
+                if rune.rune_type == RuneType.MINOR:
+                    rune_name = "minor_rune"
+                else:
+                    rune_name = rune.name if hasattr(rune, 'name') else 'runa'
                 icon_path = f"assets/runes/asset32x32/{rune_name}.png"
                 if icon_path not in self.menu.icon_cache:
                     try:

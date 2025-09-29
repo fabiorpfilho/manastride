@@ -28,7 +28,7 @@ class Projectile(Spell):
             base_attributes={"damage": 10, "speed": 300, "mana_cost": 20},
             major_rune=major_rune,
             minor_runes=minor_runes or [],
-            cooldown=0.5  # Cooldown de 0.5 segundos entre disparos
+            cooldown=1  # Cooldown de 0.5 segundos para disparar outro projétil
         )
         self.projectiles: List[ProjectileInstance] = []  # Projéteis ativos na tela
         self.pending_projectiles: List[ProjectileData] = []  # Projéteis esperando o tempo de spawn

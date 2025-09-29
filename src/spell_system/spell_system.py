@@ -36,6 +36,7 @@ class SpellSystem:
 
     def add_rune(self, rune: Rune):
         print(f"Adicionando a runa {rune}")
+        print("Efeito da runa: ", rune.effect)
         """Add a new rune to the system."""
         self.runes.append(rune)
 
@@ -107,7 +108,7 @@ class SpellSystem:
 
             # Minors únicas
             spell.minor_runes = [r for r in spell.minor_runes if r not in new_minor_runes]
-
+        print(f"Feitiço no índice {index} atualizado: Major={major_rune}, Minors={new_minor_runes}")
         # --- Reatribuir feitiço atualizado ---
         if spell_index == 0:
             self.spellbook[0] = Projectile(major_rune=major_rune, minor_runes=new_minor_runes)
