@@ -1,5 +1,10 @@
+import pygame
+import json
 import xml.etree.ElementTree as ET
-import random
+import os
+import logging
+from objects.static_objects.terrain import Terrain
+from objects.static_objects.door import Door
 from objects.dynamic_objects.rune import Rune
 from objects.dynamic_objects.player import Player
 from objects.dynamic_objects.hammer_bot import HammerBot
@@ -12,47 +17,34 @@ from ui.score import Score
 from ui.status_bar import StatusBar
 from ui.hotbar import HotBar
 from object_factory import ObjectFactory
+from entity_manager import EntityManager
 
 class Level:
-    def __init__(self, screen, level_name):
+    def __init__(self, screen, level_name, player_spawn=None):
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+        self.logger = logging.getLogger(__name__)
         self.screen = screen
         self.all_sprites = []
-        self.player = None
-        self.enemies = []
-        self.dynamic_objects = []
+        self.spell_system = SpellSystem()
+        self.asset_loader = AssetLoader()
+        self.entity_manager = EntityManager(self.spell_system, ObjectFactory(self.asset_loader, self.spell_system))
         self.static_objects = []
         self.background = [0, 0, 0]
         self.background_layers = []
         self.tile_size = 24
         self.score = 0
-        self.spell_system = SpellSystem()
-        self.asset_loader = AssetLoader()
         self.level_name = level_name
         self.status_bar = StatusBar(self.screen, self.asset_loader)
         self.score_ui = Score(self.screen, self.asset_loader)
         self.hotbar = HotBar(self.screen, self.asset_loader)
         self.is_completed = False
-        self.object_factory = ObjectFactory(self.asset_loader, self.spell_system, self.player)
-        self.current_spawn = None
-        self.minor_rune_effects = [
-            {"power": 5},  # Aumenta o poder
-            {"cost": -10},  # Reduz o custo
-            {"cooldown": -5},  # Reduz a recarga
-            {"power": 15, "cost": 10},  # Aumenta o poder, mas aumenta o custo
-            {"cooldown": 10, "cost": -8},  # Aumenta a recarga, mas reduz o custo
-            {"power": 10, "cooldown": 8},  # Aumenta o poder, mas aumenta a recarga
-            {"power": -5, "cooldown": -10},  # Reduz o poder, mas reduz a recarga
-            {"cost": -5, "cooldown": -5, "power": -8}  # Reduz custo e recarga, mas reduz o poder
-        ]
-        # Listas para rastrear efeitos usados
-        self.available_effects = self.minor_rune_effects.copy()
-        self.used_effects = []
+        self.current_spawn = player_spawn
 
-        self.load_map(level_name)
+        self.load_map(level_name, player_spawn)
 
     def load_map(self, level_name, player_spawn=None):
+        self.actual_map = level_name
         self.level_name = level_name
-        self.current_spawn = player_spawn
         self.map_data = self.asset_loader.load_map_data(level_name)
         if self.map_data is None:
             return
@@ -79,39 +71,35 @@ class Level:
         )
         
         self.all_sprites = []
-        self.enemies = []
-        self.dynamic_objects = [self.player] if self.player else []
         self.static_objects = []
         
         self._process_objects(player_spawn)
 
-        if self.player and player_spawn is not None:
-            self.object_factory.update_player_position(self.player, player_spawn)
-        self.all_sprites += self.dynamic_objects + self.static_objects
+        if self.entity_manager.get_player() and player_spawn is not None:
+            self.entity_manager.object_factory.update_player_position(self.entity_manager.get_player(), player_spawn)
+        self.all_sprites = self.entity_manager.entities + self.static_objects
         
         self._process_tilemap()
             
-        self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, world_width)
+        self.collision_manager = CollisionManager(self.entity_manager.entities, self.static_objects, world_width)
 
     def _process_objects(self, player_spawn=None):
         """Processa a camada de objetos do mapa usando ObjectFactory."""
         object_group = self.map_data.find("objectgroup[@name='objects']")
         if object_group is None:
-            print("Erro: Nenhuma camada de objetos 'objects' encontrada no mapa")
+            self.logger.error("Nenhuma camada de objetos 'objects' encontrada no mapa")
             return
 
         for obj in object_group.findall("object"):
-            new_obj = self.object_factory.create_object(obj, player_spawn)
+            new_obj = self.entity_manager.object_factory.create_object(obj, player_spawn)
             if new_obj:
                 if isinstance(new_obj, (Player, HammerBot, Rune)):
-                    if isinstance(new_obj, Player):
-                        print("New object: ", new_obj.position)
-                        self.player = new_obj
-                    elif isinstance(new_obj, HammerBot):
-                        self.enemies.append(new_obj)
-                    self.dynamic_objects.append(new_obj)
+                    is_enemy = isinstance(new_obj, HammerBot)
+                    self.entity_manager.add_entity(new_obj, is_enemy=is_enemy)
+                    self.all_sprites.append(new_obj)
                 else:  # Portas e outros estáticos
                     self.static_objects.append(new_obj)
+                    self.all_sprites.append(new_obj)
 
     def _process_tilemap(self):
         """Processa a camada de blocos do mapa Tiled usando ObjectFactory para terrenos."""
@@ -129,7 +117,7 @@ class Level:
                     x = col_idx * self.tile_width
                     y = row_idx * self.tile_height
                     if gid in self.tileset:
-                        terrain = self.object_factory.create_terrain(
+                        terrain = self.entity_manager.object_factory.create_terrain(
                             position=(x, y),
                             size=(self.tile_width, self.tile_height),
                             image=self.tileset[gid]
@@ -153,128 +141,73 @@ class Level:
             scaled_image = self.camera.apply_surface(sprite.image)
             self.screen.blit(scaled_image, offset_rect)
 
-        for spell in self.player.spell_system.spellbook:
+        for spell in self.spell_system.spellbook:
             spell.draw(self.screen, self.camera)
             
-        if self.player:
-            self.status_bar.draw(self.player)
-            self.hotbar.draw(self.player)
+        player = self.entity_manager.get_player()
+        if player:
+            self.status_bar.draw(player)
+            self.hotbar.draw(player)
 
         self.score_ui.draw(self.score)
 
-        for obj in self.dynamic_objects:
+        for obj in self.entity_manager.entities:
             obj.draw_colliders_debug(self.screen, self.camera)
 
     def update(self, delta_time):
-        if self.player.health <= 0:
-            # self.load_map(self.level_name, self.current_spawn)
+        player = self.entity_manager.get_player()
+        if player and player.health <= 0:
             self.reset()
 
-        for obj in self.dynamic_objects[:]:
-            if isinstance(obj, HammerBot):
-                if obj.marked_for_removal:
-                    self.score += 100
-                    self.generate_minor_rune(obj)
-                    self.dynamic_objects.remove(obj)
-                    self.enemies.remove(obj)
-                else:
-                    obj.update(delta_time, self.static_objects)
-            elif hasattr(obj, "marked_for_removal"):
-                if obj.marked_for_removal:
-                    self.dynamic_objects.remove(obj)
-                    self.all_sprites.remove(obj)
-            elif isinstance(obj, Player):
-                obj.update(delta_time)
-            elif isinstance(obj, Rune):
-                    obj.update(delta_time)
+        self.entity_manager.update(
+            delta_time,
+            self.static_objects,
+            lambda points: setattr(self, 'score', self.score + points),
+            self.all_sprites
+        )
 
-    
-        player_pos = [self.player.position.x + self.player.size[0] / 2, 
-                      self.player.position.y + self.player.size[1] / 2]
-        
-        self.player.spell_system.update(delta_time, player_pos)
-
-        for spell in self.player.spell_system.spellbook:
-            if not spell:
-                continue
-            if hasattr(spell, "projectiles"):
-                for proj in spell.projectiles:
-                    if proj not in self.dynamic_objects:
-                        self.dynamic_objects.append(proj)
-                        self.all_sprites.append(proj)
-            if hasattr(spell, "shields"):
-                for shield in spell.shields:
-                    if spell.major_rune and spell.major_rune.name == "fan" and shield not in self.static_objects:
-                        self.static_objects.append(shield)
-                        self.all_sprites.append(shield)
-                    elif shield not in self.dynamic_objects:
-                        self.dynamic_objects.append(shield)
-                        self.all_sprites.append(shield)
-
-        self.collision_manager.update(self.dynamic_objects)
+        self.collision_manager.update(self.entity_manager.entities)
         
         if self.level_name == "level_2":
             if self.collision_manager.door_triggered:
                 target_map, player_spawn = self.collision_manager.door_triggered
                 if target_map == "level_3":
-                    print("Level_2 completed: Transition to level_3 detected")
+                    self.logger.info("Level_2 completed: Transition to level_3 detected")
                     self.is_completed = True
                     return None
-            if not any(isinstance(obj, HammerBot) for obj in self.dynamic_objects):
-                print("Level_2 completed: No more HammerBot enemies")
+            if self.entity_manager.check_completion():
+                self.logger.info("Level_2 completed: No more enemies")
                 self.is_completed = True
                 return None
         
         if self.collision_manager.door_triggered:
-            print(f"Door triggered: {self.collision_manager.door_triggered}")
-            door_triggered = self.collision_manager.door_triggered
-            target_map, player_spawn = door_triggered
+            self.logger.info(f"Door triggered: {self.collision_manager.door_triggered}")
+            target_map, player_spawn = self.collision_manager.door_triggered
             self.load_map(target_map, player_spawn)
             return
         
-        self.camera.update(self.player)
+        self.camera.update(self.entity_manager.get_player())
 
         for layer in self.background_layers:
             layer['offset_x'] = -self.camera.offset.x * layer['parallax_factor']
             layer['offset_y'] = -self.camera.offset.y * layer['parallax_factor']
-            
-
-            
-    def generate_minor_rune(self, obj):
-        """Gera uma runa menor com um efeito aleatório, evitando repetição até que todos sejam usados."""
-        if not self.available_effects:
-            # Se todos os efeitos foram usados, reinicia a lista
-            self.available_effects = self.used_effects.copy()
-            self.used_effects = []
-        effect = random.choice(self.available_effects)
-        self.available_effects.remove(effect)
-        self.used_effects.append(effect)
-        minor_rune = self.object_factory.create_object({
-            'position': (obj.position.x + (obj.size[0] / 2), obj.position.y),
-            'size': (11, 15),
-            'name': 'Runa menor',
-            'type': 'rune',
-            'rune_type': 'minor',
-            'effect': effect
-        })
-        if minor_rune:  # Verifica se a runa foi criada com sucesso
-            self.dynamic_objects.append(minor_rune)
-            self.all_sprites.append(minor_rune)
 
     def reset(self):
-        self.player.health = 100
-        self.player.mana = 100
-        self.player.position = Vector2(100, 300)
-        self.player.sync_position()
-        self.enemies = [self.object_factory.create_object({
+        player = self.entity_manager.get_player()
+        player.health = 100
+        player.mana = 100
+        self.entity_manager.object_factory.update_player_position(player, (100, 300))
+        self.entity_manager = EntityManager(self.spell_system, self.entity_manager.object_factory)
+        self.entity_manager.add_entity(player)
+        new_enemy = self.entity_manager.object_factory.create_object({
             'type': 'spawn',
             'name': 'hammer_bot',
             'position': (300, 300),
             'size': (22, 31)
-        })]
-        self.dynamic_objects = [self.player] + self.enemies
-        self.all_sprites = self.static_objects + self.dynamic_objects
+        })
+        self.entity_manager.add_entity(new_enemy, is_enemy=True)
+        self.all_sprites = self.entity_manager.entities + self.static_objects
         self.score = 0
-        self.camera.target = self.player
+        self.camera.target = player
         self.camera.offset = Vector2(0, 0)
-        self.collision_manager = CollisionManager(self.dynamic_objects, self.static_objects, self.map_width * self.tile_width)
+        self.collision_manager = CollisionManager(self.entity_manager.entities, self.static_objects, self.map_width * self.tile_width)
