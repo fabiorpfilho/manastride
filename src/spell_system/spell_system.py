@@ -1,4 +1,5 @@
 from spell_system.rune import Rune
+from spell_system.rune_type import RuneType
 from spell_system.spell import Spell
 from typing import List
 from spell_system.spells.projectile import Projectile
@@ -67,7 +68,7 @@ class SpellSystem:
                 for shield in spell.shields:
                     shield.sync_position()
 
-    def update_spell(self, index: int, major_rune: Rune = None, minor_runes: List[Rune] = None):
+    def update_spell(self, index: int, rune: Rune):
         """
         Atualiza o feitiço no índice dado, aplicando toggle de runas
         (remove se já estiver vinculada), garantindo exclusividade
@@ -77,42 +78,56 @@ class SpellSystem:
         if spell_index not in [0, 1, 2]:
             print(f"Índice inválido: {index}. Use 1 (Projectile), 2 (Dash) ou 3 (Shield).")
             return
-
+        
         current_spell = self.spellbook[spell_index]
-        minor_runes = minor_runes or []
+        is_major = rune.rune_type == RuneType.MAJOR
+        if is_major:
+            is_present = current_spell.major_rune == rune
+        else:
+            is_present = rune in current_spell.minor_runes
 
-        # --- Toggle Major ---
-        if major_rune and current_spell.major_rune == major_rune:
-            major_rune = None  # desativa se já estava
+        if is_present:
+            # Toggling off, no need for exclusivity check
+            current_spell.update_runes(rune)
+        else:
+            # Toggling on, first ensure exclusivity by removing from other spells
+            for i, spell in enumerate(self.spellbook):
+                if spell is None or i == spell_index:
+                    continue
 
-        # --- Toggle Minor ---
-        new_minor_runes = list(current_spell.minor_runes)  # cópia
-        for r in minor_runes:
-            if r in new_minor_runes:
-                new_minor_runes.remove(r)  # toggle → remove
-            else:
-                new_minor_runes.append(r)  # adiciona
+                changed = False
+                if is_major:
+                    if spell.major_rune == rune:
+                        spell.major_rune = None
+                        changed = True
+                else:
+                    if rune in spell.minor_runes:
+                        spell.minor_runes.remove(rune)
+                        changed = True
 
-        # Garantir limite de 2 minors
-        if len(new_minor_runes) > 2:
-            new_minor_runes = new_minor_runes[:2]
+                if changed:
+                    spell.recalculate_attributes()
 
-        # --- Exclusividade: remover runas iguais de outros feitiços ---
-        for i, spell in enumerate(self.spellbook):
-            if spell is None or i == spell_index:
+            # Now toggle on (add) to current spell
+            current_spell.update_runes(rune)
+
+        print(f"Feitiço no índice {index} atualizado: Major={current_spell.major_rune}, Minors={current_spell.minor_runes}")
+
+    def check_exclusivity(self) -> bool:
+        """
+        Verifica se alguma runa está vinculada a mais de um feitiço ao mesmo tempo.
+        Retorna True se todas as runas forem exclusivas, False caso contrário.
+        """
+        seen_runes = set()
+        for spell in self.spellbook:
+            if spell is None:
                 continue
-
-            # Major única
-            if major_rune and spell.major_rune == major_rune:
-                spell.major_rune = None
-
-            # Minors únicas
-            spell.minor_runes = [r for r in spell.minor_runes if r not in new_minor_runes]
-        print(f"Feitiço no índice {index} atualizado: Major={major_rune}, Minors={new_minor_runes}")
-        # --- Reatribuir feitiço atualizado ---
-        if spell_index == 0:
-            self.spellbook[0] = Projectile(major_rune=major_rune, minor_runes=new_minor_runes)
-        elif spell_index == 1:
-            self.spellbook[1] = Dash(major_rune=major_rune, minor_runes=new_minor_runes)
-        elif spell_index == 2:
-            self.spellbook[2] = Shield(major_rune=major_rune, minor_runes=new_minor_runes)
+            if spell.major_rune:
+                if spell.major_rune in seen_runes:
+                    return False
+                seen_runes.add(spell.major_rune)
+            for minor in spell.minor_runes:
+                if minor in seen_runes:
+                    return False
+                seen_runes.add(minor)
+        return True

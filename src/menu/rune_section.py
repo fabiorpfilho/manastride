@@ -35,14 +35,12 @@ class RunesSection:
                         if rune.rune_type == RuneType.MAJOR:
                             self.menu.player.spell_system.update_spell(
                                 self.menu.selected_spell + 1,
-                                major_rune=rune,
-                                minor_runes=spell.minor_runes
+                                rune,
                             )
                         elif rune.rune_type == RuneType.MINOR:
                             self.menu.player.spell_system.update_spell(
                                 self.menu.selected_spell + 1,
-                                major_rune=spell.major_rune,
-                                minor_runes=[rune]
+                                rune
                             )
                         # Resetar seleção
                         self.menu.selected_spell = None

@@ -20,14 +20,14 @@ class DescriptionSection:
 
         # Descrições base dos feitiços (sem quebras de linha manuais)
         self.spell_descriptions = {
-            "Projectile": "Um projétil que causa dano no impacto.\n",
-            "Dash": "Avança rapidamente em uma direção.\n",
-            "Shield": "Gera um escudo que absorve uma pequena quantidade de dano.\n",
+            "Projectile": "Um projétil que causa dano no impacto.",
+            "Dash": "Avança rapidamente em uma direção.",
+            "Shield": "Gera um escudo que absorve uma pequena quantidade de dano.",
         }
 
         # Descrições das runas (sem quebras de linha manuais)
         self.rune_descriptions = {
-            "fan": "Permite que o feitiço se espalhe como as raizes de uma árvore.",
+            "fan": "Permite que o feitiço se espalhe como as raízes de uma árvore.",
             "multiple": "Multiplica o feitiço em algum aspecto.",
         }
 
@@ -39,9 +39,9 @@ class DescriptionSection:
                 "Escudo: gera uma barreira sólida que impede inimigos de atravessar."
             ),
             "multiple": (
-                "Projétil: Atira três projeteis um atras do outro.\n"
-                "Investida: Permite um curto avanço e vezes sem ativar recarga ou custo de mana por um pequeno periodo.\n"
-                "Escudo: Gera um escudo que absorve completamente os 3 proximos danos tomados."
+                "Projétil: Atira três projéteis um atrás do outro.\n"
+                "Investida: Permite um curto avanço várias vezes sem ativar recarga ou custo de mana por um pequeno período.\n"
+                "Escudo: Gera um escudo que absorve completamente os 3 próximos danos tomados."
             ),
         }
 
@@ -59,34 +59,72 @@ class DescriptionSection:
             spell_name = self.get_name(item, "spell")
             base_desc = self.spell_descriptions.get(item.__class__.__name__, "Um feitiço misterioso sem descrição.")
 
-            # Se o feitiço tiver uma major_rune, adiciona a descrição da runa
+            # Descrição base do feitiço
+            desc_lines = [base_desc]
+
+            # Adicionar informações da runa maior, se houver
             if hasattr(item, "major_rune") and item.major_rune is not None:
                 rune_name = getattr(item.major_rune, "name", None)
                 if rune_name and rune_name in self.rune_spell_effects:
                     rune_effect_text = self.rune_spell_effects[rune_name]
-
                     # Filtrar apenas a linha correspondente a este feitiço
                     effect_lines = rune_effect_text.split("\n")
-                    spell_effect_line = ""
                     for line in effect_lines:
                         if line.startswith(spell_name + ":"):
                             spell_effect_line = line.split(":", 1)[1].strip()
+                            desc_lines.append(f"\nRuna maior: {self.get_name(item.major_rune, 'rune')}")
+                            desc_lines.append(spell_effect_line)
                             break
+            # Adicionar informações das runas menores, se houver
+            if hasattr(item, "minor_runes") and item.minor_runes:
+                print("Entrou aqui")
+                for rune in item.minor_runes:
+                    print("Runa descrição: ", rune)
+                    rune_name = getattr(rune, "name", None)
+                    if rune_name and rune_name in self.rune_spell_effects:
+                        rune_effect_text = self.rune_spell_effects[rune_name]
+                        effect_lines = rune_effect_text.split("\n")
+                        for line in effect_lines:
+                            if line.startswith(spell_name + ":"):
+                                spell_effect_line = line.split(":", 1)[1].strip()
+                                desc_lines.append(f"Runa menor: {self.get_name(rune, 'rune')}")
+                                desc_lines.append(spell_effect_line)
+                                break
 
-                    if spell_effect_line:
-                        return (
-                            f"{base_desc}\n"
-                            f"Runa aplicada: {self.get_name(item.major_rune, 'rune')}\n"
-                            f"{spell_effect_line}"
-                        )
+            # Adicionar atributos do feitiço
+            if hasattr(item, "attributes") and item.attributes:
+                desc_lines.append("\nAtributos:")
+                if "damage" in item.attributes:
+                    desc_lines.append(f"Dano: {item.attributes['damage']}")
+                if "distance" in item.attributes:
+                    desc_lines.append(f"Distância: {item.attributes['distance']}")
+                if "health" in item.attributes:
+                    desc_lines.append(f"Vida: {item.attributes['health']}")
+                if "mana_cost" in item.attributes:
+                    desc_lines.append(f"Custo de Mana: {item.attributes['mana_cost']}")
+                if hasattr(item, "cooldown"):
+                    desc_lines.append(f"Cooldown: {item.cooldown:.1f}s")
 
-            return base_desc
+            return "\n".join(desc_lines)
 
         elif item_type == "rune":
-            return self.rune_descriptions.get(getattr(item, "name", "Runa"), "Uma runa misteriosa sem descrição.")
+            base_desc = self.rune_descriptions.get(getattr(item, "name", "Runa"), "Um fragmento de algo maior, com pouco poder restante.")
+            desc_lines = [base_desc]
+            print('Item: ', item)
+            # Adicionar atributos da runa, se for menor e tiver effect
+            if hasattr(item, "rune_type") and item.rune_type == "MINOR" and hasattr(item, "effect") and item.effect:
+                desc_lines.append("Atributos:")
+                if "power" in item.effect:
+                    desc_lines.append(f"Poder: {item.effect['power']}")
+                if "cost" in item.effect:
+                    desc_lines.append(f"Custo de Mana: {item.effect['cost']}")
+                if "cooldown" in item.effect:
+                    percentage = item.effect["cooldown"] / 10.0
+                    desc_lines.append(f"Modificador de Cooldown: {percentage*100:+.0f}%")
+
+            return "\n".join(desc_lines)
 
         return "Nenhum item selecionado."
-
 
     def wrap_text(self, text, font, max_width):
         """Quebra o texto em várias linhas com base na largura máxima."""
@@ -121,6 +159,7 @@ class DescriptionSection:
         title_width = desc_title.get_width()
         title_x = center_x + desc_offset_x + (description_size[0] - title_width) // 2  # Centraliza horizontalmente
         self.menu.screen.blit(desc_title, (title_x, center_y + desc_offset_y + 10))
+
         # Determinar qual item está selecionado/hovered
         if self.hovered_item:
             section, idx = self.hovered_item
