@@ -10,7 +10,7 @@ class SpellsSection:
         self.menu_rects = []
 
     def handle_input(self, events, paused, running, mouse_pos):
-        """Processa entrada para a seção de feitiços."""
+        """Processa entrada para a seção de feitiços (apenas teclado)."""
         max_spells = 3
         for event in events:
             if event.type == pygame.KEYDOWN and self.selected_section == 'spells':
@@ -45,12 +45,6 @@ class SpellsSection:
                     elif self.selected_item < len(self.menu.player.spell_system.spellbook):
                         self.menu.selected_spell = self.selected_item
                         self.selected_section = 'runes'
-
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                for i, rect in enumerate(self.menu_rects):
-                    if rect.collidepoint(mouse_pos) and i < max_spells:
-                        self.selected_section = 'spells'
-                        self.selected_item = i
         return paused, running
 
     def draw(self, mouse_pos):
@@ -95,8 +89,8 @@ class SpellsSection:
                 icon_rect = icon.get_rect(center=(cell_x + cell_size // 2, cell_y + cell_size // 2))
                 self.menu.screen.blit(icon, icon_rect)
 
-            is_hovered = cell_rect.collidepoint(mouse_pos)
-            if is_hovered or (self.selected_section == 'spells' and i == self.selected_item):
+            # Highlight only for keyboard-selected item
+            if self.selected_section == 'spells' and i == self.selected_item:
                 pygame.draw.rect(self.menu.screen, (255, 255, 0), cell_rect, 3)
                 self.menu.description_section.hovered_item = ('spells', i)
 
@@ -116,11 +110,18 @@ class SpellsSection:
             pygame.draw.polygon(self.menu.screen, major_color, losango_points)
             pygame.draw.polygon(self.menu.screen, (255, 255, 255), losango_points, 1)
 
-            # Draw circles for minor runes
-            minor_rune_colors = [(0, 0, 0), (0, 0, 0)]
+            # Initialize default colors for both minor rune slots (e.g., black for empty)
+            minor_rune_colors = [(0, 0, 0), (0, 0, 0)]  # Default: both slots empty
+        
+            # Check each rune slot explicitly
             if i < len(spellbook):
-                for j, rune in enumerate(spellbook[i].minor_runes[:2]):
-                    minor_rune_colors[j] = RUNE_COLORS.get("fire_rune", (0, 0, 0))
+                minor_runes = spellbook[i].minor_runes[:2]  # Get up to two minor runes
+                if len(minor_runes) > 0 and minor_runes[0] is not None:  # Check first rune slot
+                    minor_rune_colors[0] = RUNE_COLORS.get(minor_runes[0].name, (0, 0, 0))
+                if len(minor_runes) > 1 and minor_runes[1] is not None:  # Check second rune slot
+                    minor_rune_colors[1] = RUNE_COLORS.get(minor_runes[1].name, (0, 0, 0))
+
+            # Draw the circles for minor runes
             pygame.draw.circle(self.menu.screen, minor_rune_colors[0], (cell_x + cell_size // 4, cell_y + cell_size - 3), 5)
             pygame.draw.circle(self.menu.screen, (255, 255, 255), (cell_x + cell_size // 4, cell_y + cell_size - 3), 5, 1)
             pygame.draw.circle(self.menu.screen, minor_rune_colors[1], (cell_x + 3 * cell_size // 4, cell_y + cell_size - 3), 5)

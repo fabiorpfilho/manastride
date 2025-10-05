@@ -43,7 +43,7 @@ class Level:
         self.load_map(level_name, player_spawn)
 
     def load_map(self, level_name, player_spawn=None):
-        self.actual_map = level_name
+        self.current_map = level_name
         self.level_name = level_name
         self.map_data = self.asset_loader.load_map_data(level_name)
         if self.map_data is None:
@@ -74,9 +74,11 @@ class Level:
         self.static_objects = []
         
         self._process_objects(player_spawn)
+        player = self.entity_manager.get_player()
 
-        if self.entity_manager.get_player() and player_spawn is not None:
+        if player and player_spawn is not None:
             self.entity_manager.object_factory.update_player_position(self.entity_manager.get_player(), player_spawn)
+        self.current_spawn = Vector2(player.position)
         self.all_sprites = self.entity_manager.entities + self.static_objects
         
         self._process_tilemap()
@@ -168,10 +170,10 @@ class Level:
 
         self.collision_manager.update(self.entity_manager.entities)
         
-        if self.level_name == "level_2":
+        if self.level_name == "starter":
             if self.collision_manager.door_triggered:
                 target_map, player_spawn = self.collision_manager.door_triggered
-                if target_map == "level_3":
+                if target_map == "level_2":
                     self.logger.info("Level_2 completed: Transition to level_3 detected")
                     self.is_completed = True
                     return None
@@ -194,20 +196,8 @@ class Level:
 
     def reset(self):
         player = self.entity_manager.get_player()
-        player.health = 100
-        player.mana = 100
-        self.entity_manager.object_factory.update_player_position(player, (100, 300))
-        self.entity_manager = EntityManager(self.spell_system, self.entity_manager.object_factory)
-        self.entity_manager.add_entity(player)
-        new_enemy = self.entity_manager.object_factory.create_object({
-            'type': 'spawn',
-            'name': 'hammer_bot',
-            'position': (300, 300),
-            'size': (22, 31)
-        })
-        self.entity_manager.add_entity(new_enemy, is_enemy=True)
-        self.all_sprites = self.entity_manager.entities + self.static_objects
+        self.entity_manager.entities = [player] if player else []
+        self.load_map(self.current_map, self.current_spawn)
+        player.health = player.max_health
+        player.mana = player.max_mana
         self.score = 0
-        self.camera.target = player
-        self.camera.offset = Vector2(0, 0)
-        self.collision_manager = CollisionManager(self.entity_manager.entities, self.static_objects, self.map_width * self.tile_width)

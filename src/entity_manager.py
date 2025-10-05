@@ -13,9 +13,9 @@ class EntityManager:
         self.spell_system = spell_system
         self.object_factory = object_factory
         self.minor_rune_effects = [
-            {"power": 5}, {"cost": -10}, {"cooldown": -5},
+            {"power": 5}, {"cost": -10}, {"cooldown": -2},
             {"power": 15, "cost": 10}, {"cooldown": 10, "cost": -8},
-            {"power": 10, "cooldown": 8}, {"power": -5, "cooldown": -10},
+            {"power": 10, "cooldown": 8}, {"power": -5, "cooldown": -5},
             {"cost": -5, "cooldown": -5, "power": -8}
         ]
         self.available_effects = self.minor_rune_effects.copy()

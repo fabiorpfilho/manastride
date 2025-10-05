@@ -77,9 +77,7 @@ class DescriptionSection:
                             break
             # Adicionar informações das runas menores, se houver
             if hasattr(item, "minor_runes") and item.minor_runes:
-                print("Entrou aqui")
                 for rune in item.minor_runes:
-                    print("Runa descrição: ", rune)
                     rune_name = getattr(rune, "name", None)
                     if rune_name and rune_name in self.rune_spell_effects:
                         rune_effect_text = self.rune_spell_effects[rune_name]
@@ -110,10 +108,9 @@ class DescriptionSection:
         elif item_type == "rune":
             base_desc = self.rune_descriptions.get(getattr(item, "name", "Runa"), "Um fragmento de algo maior, com pouco poder restante.")
             desc_lines = [base_desc]
-            print('Item: ', item)
             # Adicionar atributos da runa, se for menor e tiver effect
-            if hasattr(item, "rune_type") and item.rune_type == "MINOR" and hasattr(item, "effect") and item.effect:
-                desc_lines.append("Atributos:")
+            if hasattr(item, "rune_type") and hasattr(item, "effect") and item.effect:
+                desc_lines.append("\nAtributos:")
                 if "power" in item.effect:
                     desc_lines.append(f"Poder: {item.effect['power']}")
                 if "cost" in item.effect:
@@ -121,6 +118,7 @@ class DescriptionSection:
                 if "cooldown" in item.effect:
                     percentage = item.effect["cooldown"] / 10.0
                     desc_lines.append(f"Modificador de Cooldown: {percentage*100:+.0f}%")
+            
 
             return "\n".join(desc_lines)
 

@@ -10,7 +10,7 @@ class RunesSection:
         self.menu_rects = []
 
     def handle_input(self, events, paused, running, mouse_pos):
-        """Processa entrada para a seção de runas."""
+        """Processa entrada para a seção de runas (apenas teclado)."""
         max_runes = 24
         for event in events:
             if event.type == pygame.KEYDOWN and self.menu.spells_section.selected_section == 'runes':
@@ -52,12 +52,6 @@ class RunesSection:
                         self.menu.selected_rune = self.selected_item
                         self.menu.spells_section.selected_section = 'spells'
                         self.selected_item = 0
-
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                for i, rect in enumerate(self.menu_rects):
-                    if rect.collidepoint(mouse_pos):
-                        self.menu.spells_section.selected_section = 'runes'
-                        self.selected_item = i
         return paused, running
 
     def draw(self, mouse_pos):
@@ -105,9 +99,9 @@ class RunesSection:
                 icon_rect = icon.get_rect(center=(cell_x + cell_size // 2, cell_y + cell_size // 2))
                 self.menu.screen.blit(icon, icon_rect)
 
-            is_hovered = cell_rect.collidepoint(mouse_pos)
-            highlight_color = RUNE_COLORS.get(runes[i].name, (255, 255, 0)) if i < len(runes) else (255, 255, 0)
-            if is_hovered or (self.menu.spells_section.selected_section == 'runes' and i == self.selected_item):
+            # Highlight only for keyboard-selected item
+            if self.menu.spells_section.selected_section == 'runes' and i == self.selected_item:
+                highlight_color = RUNE_COLORS.get(runes[i].name, (255, 255, 0)) if i < len(runes) else (255, 255, 0)
                 pygame.draw.rect(self.menu.screen, highlight_color, cell_rect, 3)
                 self.menu.description_section.hovered_item = ('runes', i)
 

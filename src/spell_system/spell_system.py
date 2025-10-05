@@ -95,18 +95,14 @@ class SpellSystem:
                 if spell is None or i == spell_index:
                     continue
 
-                changed = False
                 if is_major:
                     if spell.major_rune == rune:
                         spell.major_rune = None
-                        changed = True
                 else:
                     if rune in spell.minor_runes:
                         spell.minor_runes.remove(rune)
-                        changed = True
-
-                if changed:
-                    spell.recalculate_attributes()
+                        spell.recalculate_attributes(rune, -1)  # Remove effects
+        
 
             # Now toggle on (add) to current spell
             current_spell.update_runes(rune)
