@@ -1,9 +1,10 @@
 import pygame
 from config import HIGHLIGHT_COLOR, BUTTON_COLOR
+
 class MainMenu:
     def __init__(self, menu):
         self.menu = menu
-        self.menu_items = ["Continuar", "Feitiços e Runas", "Controles", "Lista de Pontuação", "Sair"]
+        self.menu_items = ["Continuar", "Feitiços e Runas", "Controles", "Lista de Pontuação", "Créditos", "Sair"]  # Added "Créditos"
         self.selected_item = 0
         self.menu_rects = []
         self.hovered_item = None
@@ -18,38 +19,55 @@ class MainMenu:
                 if event.key == pygame.K_UP or event.key == pygame.K_w:
                     self.selected_item = max(0, self.selected_item - 1)
                 elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    self.selected_item = min(
-                        len(self.menu_items) - 1, self.selected_item + 1)
+                    self.selected_item = min(len(self.menu_items) - 1, self.selected_item + 1)
                 elif event.key == pygame.K_RETURN:
-                    if self.selected_item == 0:  # Continue
+                    if self.selected_item == 0:  # Continuar
+                        print("Continuar selecionado via tecla Enter")
                         paused = False
-                    elif self.selected_item == 1:  # Spells
+                    elif self.selected_item == 1:  # Feitiços e Runas
+                        print("Feitiços e Runas selecionado")
                         self.menu.current_menu = 'inventory'
                         self.selected_item = 0
-                    elif self.selected_item == 2:  # Controls
+                    elif self.selected_item == 2:  # Controles
+                        print("Controles selecionado")
                         self.menu.current_menu = 'controls'
                         self.selected_item = 0
-                    elif self.selected_item == 3:  # lista de pontuação
+                    elif self.selected_item == 3:  # Lista de Pontuação
+                        print("Lista de Pontuação selecionado")
                         self.menu.current_menu = 'scores'
                         self.selected_item = 0
-                    elif self.selected_item == 4:  # Exit
+                    elif self.selected_item == 4:  # Créditos
+                        print("Créditos selecionado")
+                        self.menu.current_menu = 'credits'
+                        self.selected_item = 0
+                    elif self.selected_item == 5:  # Sair
+                        print("Sair selecionado")
                         running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 for i, rect in enumerate(self.menu_rects):
                     if rect.collidepoint(mouse_pos):
                         self.selected_item = i
-                        if i == 0:  # Continue
+                        if i == 0:  # Continuar
+                            print("Continuar selecionado via clique do mouse")
                             paused = False
-                        elif i == 1:  # Spells
+                        elif i == 1:  # Feitiços e Runas
+                            print("Feitiços e Runas selecionado via clique do mouse")
                             self.menu.current_menu = 'inventory'
                             self.selected_item = 0
-                        elif i == 2:  # Controls
+                        elif i == 2:  # Controles
+                            print("Controles selecionado via clique do mouse")
                             self.menu.current_menu = 'controls'
                             self.selected_item = 0
-                        elif i== 3:  # lista de pontuação
+                        elif i == 3:  # Lista de Pontuação
+                            print("Lista de Pontuação selecionado via clique do mouse")
                             self.menu.current_menu = 'scores'
                             self.selected_item = 0
-                        elif i == 4:  # Exit
+                        elif i == 4:  # Créditos
+                            print("Créditos selecionado via clique do mouse")
+                            self.menu.current_menu = 'credits'
+                            self.selected_item = 0
+                        elif i == 5:  # Sair
+                            print("Sair selecionado via clique do mouse")
                             running = False
         return paused, running
 
@@ -82,7 +100,7 @@ class MainMenu:
             text = self.item_font.render(item, True, (255, 255, 255))
             text_rect = text.get_rect(center=(self.menu.width // 2, menu_y_start + i * 60))
             is_hovered = text_rect.collidepoint(mouse_pos)
-            color = (255, 255, 0) if (i == self.selected_item or is_hovered) else (255, 255, 255)
+            color = (255, 255, 0) if (i == self.selected_item or is_hovered) else BUTTON_COLOR
             text = self.item_font.render(item, True, color)
             
             # Sombra do texto

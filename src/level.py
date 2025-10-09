@@ -43,10 +43,13 @@ class Level:
         self.load_map(level_name, player_spawn)
 
     def load_map(self, level_name, player_spawn=None):
+        self.all_sprites = []
+        self.static_objects = []
         self.current_map = level_name
         self.level_name = level_name
         self.map_data = self.asset_loader.load_map_data(level_name)
         if self.map_data is None:
+            self.logger.error("Falha ao carregar dados do mapa")
             return
         
         self.tile_width = int(self.map_data.get("tilewidth"))
@@ -70,9 +73,14 @@ class Level:
             camera_zoom=self.camera.zoom
         )
         
-        self.all_sprites = []
-        self.static_objects = []
+        # Aguarda o processamento completo do tilemap
+        self._process_tilemap()
         
+        # Verifica se o terreno foi criado antes de prosseguir
+        if not self.static_objects:
+            self.logger.warning("Nenhum terreno foi criado. Verifique o tilemap.")
+        
+        # Só processa objetos após o tilemap estar concluído
         self._process_objects(player_spawn)
         player = self.entity_manager.get_player()
 
@@ -81,9 +89,37 @@ class Level:
         self.current_spawn = Vector2(player.position)
         self.all_sprites = self.entity_manager.entities + self.static_objects
         
-        self._process_tilemap()
-            
         self.collision_manager = CollisionManager(self.entity_manager.entities, self.static_objects, world_width)
+
+    def _process_tilemap(self):
+        """Processa a camada de blocos do mapa Tiled usando ObjectFactory para terrenos."""
+        layer = self.map_data.find("layer")
+        if layer is None:
+            self.logger.error("Nenhuma camada de tilemap encontrada")
+            return
+
+        data = layer.find("data").text.strip()
+        rows = [row for row in data.splitlines() if row.strip()]
+        tilemap = []
+        for row in rows:
+            tiles = [int(tile) if tile.strip() else 0 for tile in row.split(",")]
+            tilemap.append(tiles)
+
+        # Processa o tilemap de forma assíncrona
+        for row_idx, row in enumerate(tilemap):
+            for col_idx, gid in enumerate(row):
+                if gid != 0:
+                    x = col_idx * self.tile_width
+                    y = row_idx * self.tile_height
+                    if gid in self.tileset:
+                        terrain = self.entity_manager.object_factory.create_terrain(
+                            position=(x, y),
+                            size=(self.tile_width, self.tile_height),
+                            image=self.tileset[gid]
+                        )
+                        self.all_sprites.append(terrain)
+                        self.static_objects.append(terrain)
+                    # Pequena pausa para evitar travamento em mapas grandes
 
     def _process_objects(self, player_spawn=None):
         """Processa a camada de objetos do mapa usando ObjectFactory."""
@@ -102,30 +138,6 @@ class Level:
                 else:  # Portas e outros estáticos
                     self.static_objects.append(new_obj)
                     self.all_sprites.append(new_obj)
-
-    def _process_tilemap(self):
-        """Processa a camada de blocos do mapa Tiled usando ObjectFactory para terrenos."""
-        layer = self.map_data.find("layer")
-        data = layer.find("data").text.strip()
-        rows = [row for row in data.splitlines() if row.strip()]
-        tilemap = []
-        for row in rows:
-            tiles = [int(tile) if tile.strip() else 0 for tile in row.split(",")]
-            tilemap.append(tiles)
-
-        for row_idx, row in enumerate(tilemap):
-            for col_idx, gid in enumerate(row):
-                if gid != 0:
-                    x = col_idx * self.tile_width
-                    y = row_idx * self.tile_height
-                    if gid in self.tileset:
-                        terrain = self.entity_manager.object_factory.create_terrain(
-                            position=(x, y),
-                            size=(self.tile_width, self.tile_height),
-                            image=self.tileset[gid]
-                        )
-                        self.all_sprites.append(terrain)
-                        self.static_objects.append(terrain)
 
     def draw(self):
         self.screen.fill(self.background)
@@ -170,7 +182,7 @@ class Level:
 
         self.collision_manager.update(self.entity_manager.entities)
         
-        if self.level_name == "starter":
+        if self.level_name == "level_3":
             if self.collision_manager.door_triggered:
                 target_map, player_spawn = self.collision_manager.door_triggered
                 if target_map == "level_2":

@@ -7,6 +7,7 @@ from menu.initial_menu import InitialMenu
 from menu.instruction_section import InstructionSection
 from menu.game_end import GameEnd
 from menu.score_list import ScoreList
+from menu.credit_menu import CreditMenu
 
 class Menu:
     def __init__(self, screen, width, height, player):
@@ -29,6 +30,7 @@ class Menu:
         self.initial_menu = InitialMenu(self)
         self.game_end = GameEnd(self)
         self.scores_list = ScoreList(self)
+        self.credits = CreditMenu(self)
 
     def handle_input(self, events, paused, running, mouse_pos=None):
         """Processa entrada e coordena entre as seções."""
@@ -67,6 +69,10 @@ class Menu:
         elif self.current_menu == 'scores':
             running = self.scores_list.handle_input(events, running, mouse_pos)
             paused = True
+        elif self.current_menu == 'credits':
+            print("Chamando handle_input para menu de créditos")
+            running = self.credits.handle_input(events, mouse_pos, running)
+            paused = True
         elif self.current_menu == 'end':
             paused = True
 
@@ -102,5 +108,7 @@ class Menu:
             self.initial_menu.draw(mouse_pos, is_initial=False)
         elif self.current_menu == 'scores':
             self.scores_list.draw(mouse_pos)
+        elif self.current_menu == 'credits':
+            self.credits.draw(mouse_pos)
         elif self.current_menu == 'end':
             self.game_end.draw()

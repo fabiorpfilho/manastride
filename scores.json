@@ -43,6 +43,15 @@
         "name": "Teste",
         "score": 0,
         "timestamp": "2025-10-05 02:52:14"
+    },
+    {
+        "name": "An\u00f4nimo",
+        "score": 0,
+        "timestamp": "2025-10-08 20:01:50"
+    },
+    {
+        "name": "An\u00f4nimo",
+        "score": 100,
+        "timestamp": "2025-10-08 20:14:01"
     }
-    
 ]

@@ -111,15 +111,12 @@ class SpellsSection:
             pygame.draw.polygon(self.menu.screen, (255, 255, 255), losango_points, 1)
 
             # Initialize default colors for both minor rune slots (e.g., black for empty)
-            minor_rune_colors = [(0, 0, 0), (0, 0, 0)]  # Default: both slots empty
         
             # Check each rune slot explicitly
+            minor_rune_colors = [(0, 0, 0), (0, 0, 0)]
             if i < len(spellbook):
-                minor_runes = spellbook[i].minor_runes[:2]  # Get up to two minor runes
-                if len(minor_runes) > 0 and minor_runes[0] is not None:  # Check first rune slot
-                    minor_rune_colors[0] = RUNE_COLORS.get(minor_runes[0].name, (0, 0, 0))
-                if len(minor_runes) > 1 and minor_runes[1] is not None:  # Check second rune slot
-                    minor_rune_colors[1] = RUNE_COLORS.get(minor_runes[1].name, (0, 0, 0))
+                for j, rune in enumerate(spellbook[i].minor_runes[:2]):
+                    minor_rune_colors[j] = RUNE_COLORS.get("fire_rune", (0, 0, 0))
 
             # Draw the circles for minor runes
             pygame.draw.circle(self.menu.screen, minor_rune_colors[0], (cell_x + cell_size // 4, cell_y + cell_size - 3), 5)
