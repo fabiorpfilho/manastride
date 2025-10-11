@@ -1,3 +1,4 @@
+
 import pygame
 import json
 import xml.etree.ElementTree as ET
@@ -20,14 +21,17 @@ from object_factory import ObjectFactory
 from entity_manager import EntityManager
 
 class Level:
-    def __init__(self, screen, level_name, player_spawn=None):
+    def __init__(self, screen, level_name, player=None, player_spawn=None):
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
         self.logger = logging.getLogger(__name__)
         self.screen = screen
         self.all_sprites = []
-        self.spell_system = SpellSystem()
         self.asset_loader = AssetLoader()
-        self.entity_manager = EntityManager(self.spell_system, ObjectFactory(self.asset_loader, self.spell_system))
+        if player and hasattr(player, 'spell_system') and player.spell_system:
+            self.spell_system = player.spell_system
+        else:
+            self.spell_system = SpellSystem()
+        self.entity_manager = EntityManager(self.spell_system, ObjectFactory(self.asset_loader, self.spell_system, player))
         self.static_objects = []
         self.background = [0, 0, 0]
         self.background_layers = []
@@ -40,9 +44,10 @@ class Level:
         self.is_completed = False
         self.current_spawn = player_spawn
 
-        self.load_map(level_name, player_spawn)
+        self.load_map(level_name, player, player_spawn)
 
-    def load_map(self, level_name, player_spawn=None):
+    def load_map(self, level_name, player=None, player_spawn=None):
+        print(f"Carregando mapa: {level_name} com spawn em {player_spawn}")
         self.all_sprites = []
         self.static_objects = []
         self.current_map = level_name
@@ -73,13 +78,15 @@ class Level:
             camera_zoom=self.camera.zoom
         )
         
-        # Aguarda o processamento completo do tilemap
+        # Process tilemap
         self._process_tilemap()
         
-        # Verifica se o terreno foi criado antes de prosseguir
+        # Verify terrain creation
         if not self.static_objects:
             self.logger.warning("Nenhum terreno foi criado. Verifique o tilemap.")
+            
         
+        self.entity_manager.entities = [player] if player else []
         # Só processa objetos após o tilemap estar concluído
         self._process_objects(player_spawn)
         player = self.entity_manager.get_player()
@@ -88,7 +95,6 @@ class Level:
             self.entity_manager.object_factory.update_player_position(self.entity_manager.get_player(), player_spawn)
         self.current_spawn = Vector2(player.position)
         self.all_sprites = self.entity_manager.entities + self.static_objects
-        
         self.collision_manager = CollisionManager(self.entity_manager.entities, self.static_objects, world_width)
 
     def _process_tilemap(self):
@@ -105,7 +111,6 @@ class Level:
             tiles = [int(tile) if tile.strip() else 0 for tile in row.split(",")]
             tilemap.append(tiles)
 
-        # Processa o tilemap de forma assíncrona
         for row_idx, row in enumerate(tilemap):
             for col_idx, gid in enumerate(row):
                 if gid != 0:
@@ -119,9 +124,8 @@ class Level:
                         )
                         self.all_sprites.append(terrain)
                         self.static_objects.append(terrain)
-                    # Pequena pausa para evitar travamento em mapas grandes
 
-    def _process_objects(self, player_spawn=None):
+    def _process_objects(self, player=None, player_spawn=None):
         """Processa a camada de objetos do mapa usando ObjectFactory."""
         object_group = self.map_data.find("objectgroup[@name='objects']")
         if object_group is None:
@@ -182,23 +186,24 @@ class Level:
 
         self.collision_manager.update(self.entity_manager.entities)
         
-        if self.level_name == "level_3":
-            if self.collision_manager.door_triggered:
-                target_map, player_spawn = self.collision_manager.door_triggered
-                if target_map == "level_2":
-                    self.logger.info("Level_2 completed: Transition to level_3 detected")
-                    self.is_completed = True
-                    return None
-            if self.entity_manager.check_completion():
-                self.logger.info("Level_2 completed: No more enemies")
-                self.is_completed = True
-                return None
+        # if self.level_name == "level_3":
+        #     if self.collision_manager.door_triggered:
+        #         target_map, player_spawn = self.collision_manager.door_triggered
+        #         if target_map == "level_2":
+        #             self.logger.info("Level_2 completed: Transition to level_3 detected")
+        #             self.is_completed = True
+        #             self.collision_manager.door_triggered = None
+        #             return None
+        #     if self.entity_manager.check_completion():
+        #         self.logger.info("Level_2 completed: No more enemies")
+        #         self.is_completed = True
+        #         return None
         
         if self.collision_manager.door_triggered:
             self.logger.info(f"Door triggered: {self.collision_manager.door_triggered}")
             target_map, player_spawn = self.collision_manager.door_triggered
-            self.load_map(target_map, player_spawn)
-            return
+            self.collision_manager.door_triggered = None
+            return (target_map, player_spawn, player)
         
         self.camera.update(self.entity_manager.get_player())
 
@@ -209,7 +214,8 @@ class Level:
     def reset(self):
         player = self.entity_manager.get_player()
         self.entity_manager.entities = [player] if player else []
-        self.load_map(self.current_map, self.current_spawn)
-        player.health = player.max_health
-        player.mana = player.max_mana
+        self.load_map(self.current_map, player, self.current_spawn)
+        if player:
+            player.health = player.max_health
+            player.mana = player.max_mana
         self.score = 0

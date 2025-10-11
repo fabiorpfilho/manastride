@@ -29,7 +29,7 @@ class Menu:
         self.instruction_section = InstructionSection(self)
         self.initial_menu = InitialMenu(self)
         self.game_end = GameEnd(self)
-        self.scores_list = ScoreList(self)
+        self.score__list = ScoreList(self)
         self.credits = CreditMenu(self)
 
     def handle_input(self, events, paused, running, mouse_pos=None):
@@ -67,7 +67,7 @@ class Menu:
             _, running = self.initial_menu.handle_input(events, mouse_pos, running, is_initial=False)
             paused = True
         elif self.current_menu == 'scores':
-            running = self.scores_list.handle_input(events, running, mouse_pos)
+            running = self.score__list.handle_input(events, running, mouse_pos)
             paused = True
         elif self.current_menu == 'credits':
             print("Chamando handle_input para menu de créditos")
@@ -107,7 +107,7 @@ class Menu:
         elif self.current_menu == 'controls':
             self.initial_menu.draw(mouse_pos, is_initial=False)
         elif self.current_menu == 'scores':
-            self.scores_list.draw(mouse_pos)
+            self.score__list.draw(mouse_pos)
         elif self.current_menu == 'credits':
             self.credits.draw(mouse_pos)
         elif self.current_menu == 'end':

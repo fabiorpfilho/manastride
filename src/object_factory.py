@@ -2,6 +2,7 @@ import pygame
 from pygame.math import Vector2
 from objects.static_objects.terrain import Terrain
 from objects.static_objects.door import Door
+from objects.static_objects.alarm import Alarm
 from objects.dynamic_objects.rune import Rune
 from objects.dynamic_objects.player import Player
 from objects.dynamic_objects.hammer_bot import HammerBot
@@ -18,6 +19,7 @@ class ObjectFactory:
             ("spawn", "hammer_bot"): self._create_hammer_bot,
             ("rune", None): self._create_rune,
             ("door", None): self._create_door,
+            ("alarm", None): self._create_alarm,
         }
 
     def create_object(self, obj: Element, player_spawn=None):
@@ -64,6 +66,32 @@ class ObjectFactory:
         position = (float(obj.get("x", 0)), float(obj.get("y", 0)))
         size = (float(obj.get("width", 0)), float(obj.get("height", 0)))
         return HammerBot(position, size)
+    
+    def create_wave_enemy(self, obj):
+        """Cria um HammerBot a partir dos dados de wave_spawn, considerando can_fall."""
+        if obj.get("type") != "wave_spawn" or obj.get("name") != "hammer_bot":
+            return None
+        
+        position = (float(obj.get("x", 0)), float(obj.get("y", 0)))
+        size = (float(obj.get("width", 0)), float(obj.get("height", 0)))
+        
+        # Extract properties
+        properties = obj.find("properties")
+        can_fall = False
+        facing_right = True  # Default value
+        if properties is not None:
+            for prop in properties.findall("property"):
+                if prop.get("name") == "can_fall":
+                    can_fall = prop.get("value").lower() == "true"
+                    break
+                elif prop.get("name") == "facing_right":
+                    facing_right = prop.get("value").lower() == "true"
+        
+        enemy = HammerBot(position, size)
+        enemy.can_fall = can_fall  # Define a propriedade can_fall
+        enemy.facing_right = facing_right  # Define a direção inicial
+        print(f"HammerBot criado em: {position}, can_fall: {can_fall}")
+        return enemy
 
     def _create_rune(self, obj: Union[Element, dict]):
         """Cria uma runa com base no elemento XML ou dicionário."""
@@ -109,8 +137,15 @@ class ObjectFactory:
         door_spawn = (float(props.get("player_spawn_x", 100)), float(props.get("player_spawn_y", 300)))
         print(f"Porta {name} com spawn: {door_spawn}")
         return Door(position, size, name, door_spawn)
+    def _create_alarm(self, obj: Element):
+        """Cria um alarme com base no elemento XML."""
+        position = (float(obj.get("x", 0)), float(obj.get("y", 0)))
+        size = (float(obj.get("width", 0)), float(obj.get("height", 0)))
+        name = obj.get("name")
+        return Alarm(position, size, name)
 
     def create_terrain(self, position, size, image):
+        print("Tamanho:", size)
         """Cria um terreno (mantido sem alterações, pois não usa XML diretamente)."""
         return Terrain(position, size, image)
 

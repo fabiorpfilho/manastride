@@ -30,6 +30,7 @@ class HammerBot(Character):
             self.animation_manager.AnimationType.HURT: 0.1,
         }
         self.facing_right = True
+        self.can_fall = False  # HammerBot não cai de plataformas
         self.add_collider((0, 0), self.size, type='body', active=True)
         self.add_collider((0, 0), self.size, type='hurt_box', active=True)
         self.add_collider((0, 0), self.size, type='attack_box', active=True)
@@ -50,6 +51,8 @@ class HammerBot(Character):
                 self.set_animation(self.animation_manager.AnimationType.IDLE1)
 
     def check_edge(self, platforms):
+        if self.can_fall:
+            return True, True
         """Check if there's a platform below the edge sensors"""
         sensor_size = (5, 5)  # Small rectangle for edge detection
         

@@ -4,6 +4,7 @@ import logging
 import json
 from datetime import datetime
 from level import Level
+from levelArena import LevelArena
 from menu.menu import Menu
 from config import DELTA_TIME
 from music_manager import MusicManager
@@ -29,8 +30,9 @@ class GameController:
         self.music_manager = MusicManager()
         self.menu = Menu(self.screen, self.width, self.height, None)
         self.current_level_name = None
-        self.player_name = None  # Store player's name
-        self.player_score = 0  # Store player's score
+        self.player_name = None
+        self.player_score = 0
+        self.player = None  # Store the player instance
         self.music_manager.load_music("menu")
 
     def save_score(self):
@@ -41,17 +43,13 @@ class GameController:
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         try:
-            # Tenta ler o arquivo existente
             try:
                 with open("scores.json", "r") as file:
                     scores = json.load(file)
             except (FileNotFoundError, json.JSONDecodeError):
                 scores = []
             
-            # Adiciona a nova pontuação
             scores.append(score_entry)
-            
-            # Salva de volta no arquivo
             with open("scores.json", "w") as file:
                 json.dump(scores, file, indent=4)
             self.logger.info(f"Pontuação salva: {score_entry}")
@@ -89,12 +87,12 @@ class GameController:
         if start_game:
             self.logger.info("Iniciando o jogo")
             self.load_level(self.starter_level)
-            player = self.level.entity_manager.get_player()
-            if player is None:
+            self.player = self.level.entity_manager.get_player()
+            if self.player is None:
                 self.logger.error("Nenhum jogador encontrado após carregar o nível inicial")
                 self.running = False
             else:
-                self.menu.player = player
+                self.menu.player = self.player
                 self.current_level_name = self.starter_level
                 self.music_manager.load_music(self.current_level_name)
                 self.game_started = True
@@ -105,16 +103,15 @@ class GameController:
         self.menu.current_menu = 'end'
         action, player_name = self.menu.game_end.update(events)
         if action:
-            # Store the player's name and score
             self.player_name = player_name if player_name else "Anônimo"
             self.player_score = self.level.score if hasattr(self.level, 'score') else 0
             self.logger.info(f"Dados do jogador capturados - Nome: {self.player_name}, Pontuação: {self.player_score}")
-            # Save the score to scores.json
             self.save_score()
             if action == "Reiniciar":
                 self.logger.info("Reiniciando o jogo")
                 self.game_ended = False
                 self.game_started = False
+                self.player = None  # Reset player for new game
                 self.menu.current_menu = 'initial'
                 self.music_manager.load_music("menu")
             elif action == "Sair":
@@ -131,15 +128,15 @@ class GameController:
         else:
             new_level_data = self.level.update(delta_time)
             if new_level_data:
-                level_name, player_spawn = new_level_data
+                level_name, player_spawn, player = new_level_data
                 self.logger.info(f"Carregando novo nível: {level_name}")
-                self.load_level(level_name, player_spawn)
-                player = self.level.entity_manager.get_player()
-                if player is None:
+                self.load_level(level_name, player, player_spawn)
+                self.player = self.level.entity_manager.get_player()
+                if self.player is None:
                     self.logger.error(f"Nenhum jogador encontrado ao carregar o nível {level_name}")
                     self.running = False
                 else:
-                    self.menu.player = player
+                    self.menu.player = self.player
                     self.current_level_name = level_name
                     self.music_manager.load_music(self.current_level_name)
             if self.level.is_completed:
@@ -147,9 +144,13 @@ class GameController:
                 self.game_ended = True
             self.level.draw()
 
-    def load_level(self, level_name, player_spawn=None):
+    def load_level(self, level_name, player=None, player_spawn=None):  
         """Load a new level with the specified name and optional player spawn point."""
-        self.level = Level(self.screen, level_name, player_spawn)
+        if level_name == "level_3":
+            self.level = LevelArena(self.screen, level_name, player, player_spawn)
+        else:
+            self.level = Level(self.screen, level_name, player, player_spawn)
+            
 
     def run(self):
         """Main game loop."""

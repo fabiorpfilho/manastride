@@ -6,6 +6,7 @@ class CollisionManager:
         self.static_objects = static_objects
         self.world_width = world_width
         self.door_triggered = None 
+        self.alarm_triggered = False
 
 
     def update(self, dynamic_objects):
@@ -40,11 +41,17 @@ class CollisionManager:
         for static in self.static_objects:
             for static_collider in static.colliders:
                 if dynamic_collider.rect.colliderect(static_collider.rect):
+                    if not static_collider.active or not dynamic_collider.active:
+                        continue
                     if static_collider.type == "barrier" and dynamic_object.tag == "player":
                         continue
                     if static_collider.type == "door" and dynamic_object.tag == "player":
                         self.door_triggered = (static.target_map, static.player_spawn)
                         continue
+                    if static_collider.type == "alarm":
+                        if dynamic_object.tag == "player":
+                            self.alarm_triggered = True
+                        continue                    
                     
 
                     if dynamic_object.tag == "projectile":
