@@ -5,11 +5,11 @@ import random
 import logging
 
 class EntityManager:
-    def __init__(self, spell_system, object_factory):
+    def __init__(self, spell_system, object_factory, minor_rune_drop_state=None):
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
         self.logger = logging.getLogger(__name__)
-        self.entities = []  # Todos os objetos dinâmicos
-        self.enemies = []  # Apenas inimigos (ex.: HammerBot)
+        self.entities = []
+        self.enemies = []
         self.spell_system = spell_system
         self.object_factory = object_factory
         self.minor_rune_effects = [
@@ -25,45 +25,72 @@ class EntityManager:
             HammerBot: self._update_hammer_bot,
             Rune: self._update_rune
         }
+        # Initialize minor_rune_drop_state, use provided state or default
+        self.minor_rune_drop_state = minor_rune_drop_state if minor_rune_drop_state is not None else {
+            "first_drop": True,
+            "streak": 0,
+            "base_chance": 0.2,
+            "increment": 0.1
+        }
 
     def add_entity(self, entity, is_enemy=False):
         """Adiciona uma entidade, opcionalmente marcando como inimigo."""
         if not hasattr(entity, 'update'):
-            # self.logger.warning(f"Tentativa de adicionar entidade sem método 'update': {type(entity)}")
             return
         if entity not in self.entities:
             self.entities.append(entity)
-            # self.logger.info(f"Entidade adicionada: {type(entity).__name__}")
             if is_enemy:
                 self.enemies.append(entity)
-                # self.logger.info(f"Inimigo adicionado: {type(entity).__name__}")
 
-    def remove_entity(self, entity, score_callback=None, all_sprites=None):
+    def remove_entity(self, entity, score_callback=None, all_sprites=None, dead_callback=None, current_dead_ids=None):
         """Remove uma entidade e atualiza pontuação se for inimigo."""
         if entity in self.entities:
             self.entities.remove(entity)
-            # self.logger.info(f"Entidade removida: {type(entity).__name__}")
             if entity in self.enemies:
+                print(f"Removendo inimigo: {type(entity).__name__} com ID: {getattr(entity, 'id', 'N/A')}")
                 self.enemies.remove(entity)
-                # self.logger.info(f"Inimigo removido: {type(entity).__name__}")
+                if current_dead_ids is not None and (not hasattr(entity, 'id') or entity.id not in current_dead_ids):
+                    # Novo: Verificar se deve dropar com base na lógica randomizada
+                    if self._should_drop_minor_rune():
+                        self._generate_minor_rune(entity, all_sprites)
                 if score_callback:
                     score_callback(100)
-                self._generate_minor_rune(entity, all_sprites)
+                if dead_callback and hasattr(entity, 'id'):
+                    dead_callback(entity.id)
+                # Verifica se o inimigo já está na lista temporária de mortos
+                print(f"Current dead IDs before rune generation: {current_dead_ids}")
 
-            else: 
+            else:
                 if all_sprites and entity in all_sprites:
                     all_sprites.remove(entity)
+
+    def _should_drop_minor_rune(self):
+        """Decide se deve dropar uma runa menor com base no estado interno."""
+        state = self.minor_rune_drop_state
+        if state["first_drop"]:
+            state["first_drop"] = False
+            self.logger.info("Primeiro inimigo derrotado - dropando runa menor")
+            return True
+        else:
+            chance = min(1.0, state["base_chance"] + state["increment"] * state["streak"])
+            self.logger.info(f"Chance de drop: {chance*100:.1f}% (streak: {state['streak']})")
+            if random.random() < chance:
+                state["streak"] = 0
+                self.logger.info("Runa menor dropada - streak resetado")
+                return True
+            else:
+                state["streak"] += 1
+                self.logger.info(f"Nenhuma runa dropada - streak aumentado para {state['streak']}")
+                return False
 
     def _generate_minor_rune(self, entity, all_sprites):
         """Gera uma runa menor com um efeito aleatório."""
         if not self.available_effects:
             self.available_effects = self.used_effects.copy()
             self.used_effects = []
-            # self.logger.info("Lista de efeitos reiniciada")
         effect = random.choice(self.available_effects)
         self.available_effects.remove(effect)
         self.used_effects.append(effect)
-        # self.logger.info(f"Gerando runa menor com efeito: {effect}")
         minor_rune = self.object_factory.create_object({
             'position': (entity.position.x + (entity.size[0] / 2), entity.position.y),
             'size': (11, 15),
@@ -76,20 +103,17 @@ class EntityManager:
             self.add_entity(minor_rune)
             if all_sprites and minor_rune not in all_sprites:
                 all_sprites.append(minor_rune)
-                # self.logger.info(f"Runa menor adicionada a all_sprites: {minor_rune.position}")
+            self.logger.info(f"Runa menor gerada com efeito: {effect}")
 
-    def update(self, delta_time, static_objects, score_callback, all_sprites):
+    def update(self, delta_time, static_objects, score_callback, all_sprites, dead_callback=None, current_dead_ids=None):
         """Atualiza todas as entidades e gerencia projéteis/escudos."""
-        # self.logger.debug(f"Entities: {self.entities}")
         for entity in self.entities[:]:
             if hasattr(entity, "marked_for_removal") and entity.marked_for_removal:
-                self.remove_entity(entity, score_callback, all_sprites)
+                self.remove_entity(entity, score_callback, all_sprites, dead_callback, current_dead_ids)
             else:
                 update_func = self.update_map.get(type(entity))
                 if update_func:
                     update_func(entity, delta_time, static_objects, all_sprites)
-                # else:
-                #     self.logger.warning(f"Nenhuma função de atualização para: {type(entity).__name__}")
 
         # Atualiza spell_system e adiciona projéteis/escudos
         player = self.get_player()
@@ -105,7 +129,6 @@ class EntityManager:
                             self.add_entity(proj)
                             if proj not in all_sprites:
                                 all_sprites.append(proj)
-                                # self.logger.info(f"Projétil adicionado a all_sprites")
                 if hasattr(spell, "shields"):
                     for shield in spell.shields:
                         if spell.major_rune and spell.major_rune.name == "fan":
@@ -113,12 +136,10 @@ class EntityManager:
                                 static_objects.append(shield)
                                 if shield not in all_sprites:
                                     all_sprites.append(shield)
-                                    # self.logger.info(f"Escudo 'fan' adicionado a static_objects")
                         elif shield not in self.entities:
                             self.add_entity(shield)
                             if shield not in all_sprites:
                                 all_sprites.append(shield)
-                                # self.logger.info(f"Escudo adicionado a all_sprites")
 
     def _update_player(self, entity, delta_time, static_objects, all_sprites):
         """Atualiza o jogador."""

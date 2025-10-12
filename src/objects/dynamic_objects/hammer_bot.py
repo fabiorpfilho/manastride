@@ -6,13 +6,20 @@ from objects.animation_manager import AnimationManager
 import json
 
 class HammerBot(Character):
-    def __init__(self, position, size,
-                 sprite=(0, 255, 0),  invincible=False, max_health=40, 
-                 attackable=True, damage=20, speed= SPEED - 120 , gravity=0, 
-                 speed_vector=(0, 0), jump_speed=0):
+    def __init__(self, position, size, sprite=(0, 255, 0), invincible=False, 
+                 max_health=40, attackable=True, damage=20, 
+                 custom_speed=None, gravity=0, speed_vector=(0, 0), jump_speed=0,
+                 custom_max_health=None, custom_damage=None, id=None):
+        # Define speed com base em custom_speed ou usa o valor padrão
+        speed = custom_speed if custom_speed is not None else SPEED - 120
+        # Define max_health com base em custom_max_health ou usa o valor padrão
+        max_health = custom_max_health if custom_max_health is not None else max_health
+        # Define damage com base em custom_damage ou usa o valor padrão
+        damage = custom_damage if custom_damage is not None else damage
         
         super().__init__(position, size, sprite, invincible, max_health,
                          attackable, damage, speed, gravity, speed_vector, jump_speed)
+        self.id = id
         self.health = max_health
         self.tag = "enemy_npc"
         self.current_animation = None

@@ -8,8 +8,8 @@ class MusicManager:
 
     def load_music(self, level_name):
         """Carrega e toca a música do nível especificado ou do menu."""
-        music_path = f"assets/audio/soundtrack/{level_name}_theme.ogg"
-        fallback_path = "assets/audio/soundtrack/level_1_theme.ogg"
+        music_path = f"assets/audio/soundtrack/{level_name}"
+        fallback_path = "assets/audio/soundtrack/backgroundmusic.ogg"
 
         try:
             pygame.mixer.music.load(music_path)

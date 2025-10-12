@@ -64,16 +64,18 @@ class ObjectFactory:
     def _create_hammer_bot(self, obj: Element):
         """Cria um HammerBot com base no elemento XML."""
         position = (float(obj.get("x", 0)), float(obj.get("y", 0)))
+        id = obj.get("id")
         size = (float(obj.get("width", 0)), float(obj.get("height", 0)))
-        return HammerBot(position, size)
+        return HammerBot(position, size, id=id)
     
-    def create_wave_enemy(self, obj):
-        """Cria um HammerBot a partir dos dados de wave_spawn, considerando can_fall."""
+    def create_wave_enemy(self, obj, custom_max_health=None, custom_speed=None):
+        """Cria um HammerBot a partir dos dados de wave_spawn, considerando can_fall e atributos personalizados."""
         if obj.get("type") != "wave_spawn" or obj.get("name") != "hammer_bot":
             return None
         
         position = (float(obj.get("x", 0)), float(obj.get("y", 0)))
         size = (float(obj.get("width", 0)), float(obj.get("height", 0)))
+        id = obj.get("id")
         
         # Extract properties
         properties = obj.find("properties")
@@ -83,14 +85,14 @@ class ObjectFactory:
             for prop in properties.findall("property"):
                 if prop.get("name") == "can_fall":
                     can_fall = prop.get("value").lower() == "true"
-                    break
                 elif prop.get("name") == "facing_right":
                     facing_right = prop.get("value").lower() == "true"
         
-        enemy = HammerBot(position, size)
+        # Criar HammerBot com atributos personalizados, se fornecidos
+        enemy = HammerBot(position, size, custom_max_health=custom_max_health, custom_speed=custom_speed, id=id)
         enemy.can_fall = can_fall  # Define a propriedade can_fall
         enemy.facing_right = facing_right  # Define a direção inicial
-        print(f"HammerBot criado em: {position}, can_fall: {can_fall}")
+        print(f"HammerBot criado em: {position}, can_fall: {can_fall}, max_health: {custom_max_health}, speed: {custom_speed}")
         return enemy
 
     def _create_rune(self, obj: Union[Element, dict]):
@@ -137,6 +139,7 @@ class ObjectFactory:
         door_spawn = (float(props.get("player_spawn_x", 100)), float(props.get("player_spawn_y", 300)))
         print(f"Porta {name} com spawn: {door_spawn}")
         return Door(position, size, name, door_spawn)
+
     def _create_alarm(self, obj: Element):
         """Cria um alarme com base no elemento XML."""
         position = (float(obj.get("x", 0)), float(obj.get("y", 0)))
@@ -145,7 +148,6 @@ class ObjectFactory:
         return Alarm(position, size, name)
 
     def create_terrain(self, position, size, image):
-        print("Tamanho:", size)
         """Cria um terreno (mantido sem alterações, pois não usa XML diretamente)."""
         return Terrain(position, size, image)
 

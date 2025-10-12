@@ -1,4 +1,3 @@
-
 import pygame
 import json
 import xml.etree.ElementTree as ET
@@ -21,7 +20,7 @@ from object_factory import ObjectFactory
 from entity_manager import EntityManager
 
 class Level:
-    def __init__(self, screen, level_name, player=None, player_spawn=None):
+    def __init__(self, screen, level_name, player=None, player_spawn=None, total_score=0, persistent_dead_ids=None, minor_rune_drop_state=None):
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
         self.logger = logging.getLogger(__name__)
         self.screen = screen
@@ -31,18 +30,26 @@ class Level:
             self.spell_system = player.spell_system
         else:
             self.spell_system = SpellSystem()
-        self.entity_manager = EntityManager(self.spell_system, ObjectFactory(self.asset_loader, self.spell_system, player))
+        print("Minor rune drop state on level init:", minor_rune_drop_state)
+        self.entity_manager = EntityManager(
+            self.spell_system,
+            ObjectFactory(self.asset_loader, self.spell_system, player),
+            minor_rune_drop_state=minor_rune_drop_state  # Pass the state
+        )
         self.static_objects = []
         self.background = [0, 0, 0]
         self.background_layers = []
         self.tile_size = 24
         self.score = 0
+        self.total_score = total_score
         self.level_name = level_name
         self.status_bar = StatusBar(self.screen, self.asset_loader)
         self.score_ui = Score(self.screen, self.asset_loader)
         self.hotbar = HotBar(self.screen, self.asset_loader)
         self.is_completed = False
         self.current_spawn = player_spawn
+        self.persistent_dead_ids = persistent_dead_ids
+        self.current_dead_ids = []
 
         self.load_map(level_name, player, player_spawn)
 
@@ -125,7 +132,7 @@ class Level:
                         self.all_sprites.append(terrain)
                         self.static_objects.append(terrain)
 
-    def _process_objects(self, player=None, player_spawn=None):
+    def _process_objects(self, player_spawn=None):
         """Processa a camada de objetos do mapa usando ObjectFactory."""
         object_group = self.map_data.find("objectgroup[@name='objects']")
         if object_group is None:
@@ -133,6 +140,9 @@ class Level:
             return
 
         for obj in object_group.findall("object"):
+            id_ = obj.get("id")
+            if obj.get("type") == "spawn" and obj.get("name") == "hammer_bot" and id_ in self.persistent_dead_ids:
+                continue
             new_obj = self.entity_manager.object_factory.create_object(obj, player_spawn)
             if new_obj:
                 if isinstance(new_obj, (Player, HammerBot, Rune)):
@@ -167,7 +177,7 @@ class Level:
             self.status_bar.draw(player)
             self.hotbar.draw(player)
 
-        self.score_ui.draw(self.score)
+        self.score_ui.draw(self.total_score + self.score)
 
         for obj in self.entity_manager.entities:
             obj.draw_colliders_debug(self.screen, self.camera)
@@ -181,29 +191,19 @@ class Level:
             delta_time,
             self.static_objects,
             lambda points: setattr(self, 'score', self.score + points),
-            self.all_sprites
+            self.all_sprites,
+            lambda id_: self.current_dead_ids.append(id_),
+            self.current_dead_ids
         )
 
         self.collision_manager.update(self.entity_manager.entities)
         
-        # if self.level_name == "level_3":
-        #     if self.collision_manager.door_triggered:
-        #         target_map, player_spawn = self.collision_manager.door_triggered
-        #         if target_map == "level_2":
-        #             self.logger.info("Level_2 completed: Transition to level_3 detected")
-        #             self.is_completed = True
-        #             self.collision_manager.door_triggered = None
-        #             return None
-        #     if self.entity_manager.check_completion():
-        #         self.logger.info("Level_2 completed: No more enemies")
-        #         self.is_completed = True
-        #         return None
         
         if self.collision_manager.door_triggered:
             self.logger.info(f"Door triggered: {self.collision_manager.door_triggered}")
             target_map, player_spawn = self.collision_manager.door_triggered
             self.collision_manager.door_triggered = None
-            return (target_map, player_spawn, player)
+            return (target_map, player_spawn, player, self.entity_manager.minor_rune_drop_state)
         
         self.camera.update(self.entity_manager.get_player())
 

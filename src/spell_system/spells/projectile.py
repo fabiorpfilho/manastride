@@ -57,10 +57,7 @@ class Projectile(Spell):
 
         effects = {k: v for k, v in self.attributes.items() if k in ["slow", "burn"]}
         minor_rune_names = [rune.name for rune in self.minor_runes]
-        if "Ice" in minor_rune_names:
-            random.choice(self.icebolt_sfx).play()
-        elif "Fire" in minor_rune_names:
-            random.choice(self.fireball_sfx).play()
+        random.choice(self.fireball_sfx).play()
 
         base_data = ProjectileData(
             direction=direction,

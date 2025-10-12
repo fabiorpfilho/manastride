@@ -111,4 +111,5 @@ class Dash(Spell):
         if not is_multiple or self.remaining_charges == 0:
             print(f"Dash executado: direção {direction}, distância {distance}, duração {duration}, velocidade {dash_speed:.2f}")
             self.current_cooldown = self.cooldown
+        pygame.mixer.Sound("assets/audio/soundEffects/spells/dash.mp3").play()
         return mana_cost
