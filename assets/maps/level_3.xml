@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="20" height="14" tilewidth="24" tileheight="24" infinite="0" nextlayerid="3" nextobjectid="75">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="20" height="14" tilewidth="24" tileheight="24" infinite="0" nextlayerid="3" nextobjectid="76">
  <tileset firstgid="1" name="oak_woods_tileset" tilewidth="24" tileheight="24" tilecount="315" columns="21">
   <image source="oak_woods_v1.0/oak_woods_tileset.png" width="504" height="360"/>
  </tileset>
@@ -17,8 +17,8 @@
 43,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,25,
 43,49,49,49,49,49,49,0,0,49,49,0,0,49,49,49,49,49,49,25,
 43,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,25,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,25,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,809,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,809,
 199,139,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,200,
 64,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,65,67
 </data>
