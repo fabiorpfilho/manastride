@@ -29,33 +29,30 @@ class Drone(Character):
         self.attack_cooldown = 0.3
         self.marked_for_removal = False  # Para remoção após morte
         self.animation_speeds = {
-            self.animation_manager.AnimationType.ATTACK1: 0.1,
+            self.animation_manager.AnimationType.WALK: 0.1,
         }
         self.facing_right = True
         self.add_collider((0, 0), self.size, type='body', active=True)
         self.add_collider((0, 0), self.size, type='hurt_box', active=True)
         self.add_collider((0, 0), self.size, type='attack_box', active=True)
-        
+        print(f"Drone criado em: {position} com ID: {self.id}")
         # Levitation parameters
-        self.base_y = position.y
-        self.levitation_amplitude = 20
-        self.levitation_speed = 2  # Frequency
-        self.levitation_timer = 0
+        # self.base_y = position[1]
+        # self.levitation_amplitude = 20
+        # self.levitation_speed = 2  # Frequency
+        # self.levitation_timer = 0
         
         if self.animation_manager:
             self.animation_manager.load_animations_from_json(
                 self.size,
-                image_path="assets/drone/PackedSpriteSheet.png",
-                json_path="assets/drone/PackedSpriteSheet.json"
+                image_path="assets/drone_bot/drone_bot.png",
+                json_path="assets/drone_bot/drone_bot.json"
             )
+            print(f"Animações do drone bot carregadas: {(self.animation_manager.animationList)}")
             if not self.animation_manager.animationList:
-                print("Erro: Nenhuma animação carregada")
+                print("Erro: Nenhuma animação do drone bot carregada")
             else:
-                # Assume only ATTACK1 is available
-                self.default_image = pygame.Surface(self.size)
-                self.default_image.fill(self.sprite)
-                self.image = self.default_image
-                self.rect = self.image.get_rect(topleft=(self.position.x, self.position.y))
+                self.set_animation(self.animation_manager.AnimationType.WALK)
 
 
     def update(self, delta_time, platforms):

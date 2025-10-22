@@ -6,6 +6,7 @@ from objects.static_objects.alarm import Alarm
 from objects.dynamic_objects.rune import Rune
 from objects.dynamic_objects.player import Player
 from objects.dynamic_objects.hammer_bot import HammerBot
+from objects.dynamic_objects.drone import Drone
 from xml.etree.ElementTree import Element
 from typing import Union
 
@@ -17,6 +18,7 @@ class ObjectFactory:
         self.object_map = {
             ("spawn", "player"): self._create_player,
             ("spawn", "hammer_bot"): self._create_hammer_bot,
+            ("spawn", "drone_bot"): self._create_drone_bot,
             ("rune", None): self._create_rune,
             ("door", None): self._create_door,
             ("alarm", None): self._create_alarm,
@@ -67,6 +69,13 @@ class ObjectFactory:
         id = obj.get("id")
         size = (float(obj.get("width", 0)), float(obj.get("height", 0)))
         return HammerBot(position, size, id=id)
+    
+    def _create_drone_bot(self, obj: Element):
+        """Cria um HammerBot com base no elemento XML."""
+        position = (float(obj.get("x", 0)), float(obj.get("y", 0)))
+        id = obj.get("id")
+        size = (float(obj.get("width", 0)), float(obj.get("height", 0)))
+        return Drone(position, size, id=id)
     
     def create_wave_enemy(self, obj, custom_max_health=None, custom_speed=None):
         """Cria um HammerBot a partir dos dados de wave_spawn, considerando can_fall e atributos personalizados."""

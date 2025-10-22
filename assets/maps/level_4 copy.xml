@@ -4,6 +4,7 @@
   <image source="oak_woods_v1.0/oak_woods_tileset.png" width="504" height="360"/>
  </tileset>
  <tileset firstgid="316" source="oak_woods_tileset.tsx"/>
+ <tileset firstgid="631" source="oak_woods_v1.0/oak_woods_tileset.tsx"/>
  <layer id="1" name="Camada de Blocos 1" width="20" height="30" offsetx="0" offsety="0.5">
   <data encoding="csv">
 6,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,9,

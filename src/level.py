@@ -3,11 +3,10 @@ import json
 import xml.etree.ElementTree as ET
 import os
 import logging
-from objects.static_objects.terrain import Terrain
-from objects.static_objects.door import Door
 from objects.dynamic_objects.rune import Rune
 from objects.dynamic_objects.player import Player
 from objects.dynamic_objects.hammer_bot import HammerBot
+from objects.dynamic_objects.drone import Drone
 from collision_manager import CollisionManager
 from camera import Camera
 from spell_system.spell_system import SpellSystem
@@ -141,12 +140,12 @@ class Level:
 
         for obj in object_group.findall("object"):
             id_ = obj.get("id")
-            if obj.get("type") == "spawn" and obj.get("name") == "hammer_bot" and id_ in self.persistent_dead_ids:
+            if obj.get("type") == "spawn" and obj.get("name") == "hammer_bot" or obj.get("name") == "drone_bot" and id_ in self.persistent_dead_ids:
                 continue
             new_obj = self.entity_manager.object_factory.create_object(obj, player_spawn)
             if new_obj:
-                if isinstance(new_obj, (Player, HammerBot, Rune)):
-                    is_enemy = isinstance(new_obj, HammerBot)
+                if isinstance(new_obj, (Player, HammerBot, Rune, Drone)):
+                    is_enemy = isinstance(new_obj, (HammerBot, Drone))
                     self.entity_manager.add_entity(new_obj, is_enemy=is_enemy)
                     self.all_sprites.append(new_obj)
                 else:  # Portas e outros estáticos
