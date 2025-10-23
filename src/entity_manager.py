@@ -1,6 +1,7 @@
 from objects.dynamic_objects.hammer_bot import HammerBot
 from objects.dynamic_objects.player import Player
 from objects.dynamic_objects.rune import Rune
+from objects.dynamic_objects.drone import Drone
 import random
 import logging
 
@@ -23,7 +24,8 @@ class EntityManager:
         self.update_map = {
             Player: self._update_player,
             HammerBot: self._update_hammer_bot,
-            Rune: self._update_rune
+            Rune: self._update_rune,
+            Drone: self._update_drone
         }
         # Initialize minor_rune_drop_state, use provided state or default
         self.minor_rune_drop_state = minor_rune_drop_state if minor_rune_drop_state is not None else {
@@ -59,8 +61,8 @@ class EntityManager:
                     dead_callback(entity.id)
                 # Verifica se o inimigo já está na lista temporária de mortos
                 print(f"Current dead IDs before rune generation: {current_dead_ids}")
-
-            else:
+                
+            if not isinstance(entity, HammerBot):
                 if all_sprites and entity in all_sprites:
                     all_sprites.remove(entity)
 
@@ -151,6 +153,9 @@ class EntityManager:
 
     def _update_rune(self, entity, delta_time, static_objects, all_sprites):
         """Atualiza a runa."""
+        entity.update(delta_time)
+    def _update_drone(self, entity, delta_time, static_objects, all_sprites):
+        """Atualiza o HammerBot."""
         entity.update(delta_time)
 
     def get_player(self):

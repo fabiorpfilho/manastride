@@ -22,13 +22,6 @@ class InitialMenu:
 
     def draw(self, mouse_pos, is_initial=True):
         """Desenha o menu inicial ou de controles com base no parâmetro is_initial."""
-        # Gradiente de fundo
-        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        for y in range(self.height):
-            alpha = 180 + (y / self.height) * 50  # Gradiente de 180 a 230 de opacidade
-            overlay.fill((0, 0, 0, int(alpha)), (0, y, self.width, 1))
-        self.menu.screen.blit(overlay, (0, 0))
-
         # Título
         title = "Manastride" if is_initial else "Controles"
         title_text = self.title_font.render(title, True, (255, 255, 255))
@@ -75,14 +68,6 @@ class InitialMenu:
                 if is_initial and event.key == pygame.K_RETURN:
                     print("Iniciar jogo selecionado via tecla Enter")
                     start_game = True  # Inicia o jogo
-                elif event.key == pygame.K_ESCAPE:
-                    if is_initial:
-                        print("Sair do jogo selecionado via tecla Esc")
-                        running = False  # Sai do jogo
-                    else:
-                        print("Voltando ao menu principal via tecla Esc")
-                        self.menu.current_menu = 'main'  # Volta ao menu principal
-                        self.menu.main_menu.selected_item = 0
                 elif not is_initial and event.key == pygame.K_RETURN:
                     print("Voltando ao menu principal via tecla Enter")
                     self.menu.current_menu = 'main'  # Volta ao menu principal

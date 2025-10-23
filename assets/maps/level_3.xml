@@ -31,48 +31,12 @@
    </properties>
   </object>
   <object id="47" name="arena_start" type="alarm" x="145.166" y="25.5" width="21" height="263.167"/>
-  <object id="52" name="hammer_bot" type="wave_spawn" x="72.3333" y="69.8337" width="22" height="31">
-   <properties>
-    <property name="can_fall" type="bool" value="true"/>
-   </properties>
-  </object>
-  <object id="55" name="hammer_bot" type="wave_spawn" x="35" y="149.833" width="22" height="31"/>
-  <object id="60" name="hammer_bot" type="wave_spawn" x="229.333" y="142.5" width="22" height="31">
-   <properties>
-    <property name="can_fall" type="bool" value="false"/>
-    <property name="facing_right" type="bool" value="false"/>
-   </properties>
-  </object>
-  <object id="64" name="hammer_bot" type="wave_spawn" x="37.6667" y="70.5" width="22" height="31">
-   <properties>
-    <property name="can_fall" type="bool" value="false"/>
-   </properties>
-  </object>
   <object id="68" name="hammer_bot" type="wave_spawn" x="91.5" y="233" width="22" height="31"/>
   <object id="69" name="player" type="spawn" x="66.5" y="250.5" width="20" height="30"/>
   <object id="70" name="end" type="door" x="462.621" y="48.3181" width="16.0909" height="47.3637">
    <properties>
     <property name="player_spawn_x" value="2101.67"/>
     <property name="player_spawn_y" value="639.50"/>
-   </properties>
-  </object>
-  <object id="71" name="hammer_bot" type="wave_spawn" x="389.667" y="230.5" width="22" height="31"/>
-  <object id="72" name="hammer_bot" type="wave_spawn" x="345" y="145.833" width="22" height="31">
-   <properties>
-    <property name="can_fall" type="bool" value="true"/>
-    <property name="facing_right" type="bool" value="false"/>
-   </properties>
-  </object>
-  <object id="73" name="hammer_bot" type="wave_spawn" x="404.333" y="142.5" width="22" height="31">
-   <properties>
-    <property name="can_fall" type="bool" value="false"/>
-    <property name="facing_right" type="bool" value="false"/>
-   </properties>
-  </object>
-  <object id="74" name="hammer_bot" type="wave_spawn" x="131" y="145.833" width="22" height="31">
-   <properties>
-    <property name="can_fall" type="bool" value="false"/>
-    <property name="facing_right" type="bool" value="false"/>
    </properties>
   </object>
  </objectgroup>

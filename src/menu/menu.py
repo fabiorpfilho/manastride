@@ -33,10 +33,38 @@ class Menu:
         self.credits = CreditMenu(self)
 
     def handle_input(self, events, paused, running, mouse_pos=None):
-        """Processa entrada e coordena entre as seções."""
+        """Processa entrada e coordena entre as seções, com manejo centralizado de ESC."""
         if mouse_pos is None:
             mouse_pos = pygame.mouse.get_pos()
-        
+
+        # Manejo centralizado de ESC
+        for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                if self.current_menu == 'initial':
+                    print("ESC no menu inicial: Saindo do jogo")
+                    return False, False  # Sai do jogo
+                elif self.current_menu == 'end':
+                    print("ESC na tela de fim: Saindo do jogo")
+                    return False, False  # Sai do jogo
+                elif self.current_menu in ['inventory', 'controls', 'scores', 'credits']:
+                    print("ESC em sub-menu: Voltando ao menu principal")
+                    self.current_menu = 'main'
+                    self.main_menu.selected_item = 0
+                    self.spells_section.selected_item = 0
+                    self.spells_section.selected_section = 'spells'
+                    self.runes_section.selected_item = 0
+                    self.selected_spell = None
+                    self.selected_rune = None
+                    return True, running  # Mantém pausa, continua running
+                elif self.current_menu == 'main':
+                    print("ESC no menu principal: Retomando o jogo")
+                    self.selected_menu_item = 0
+                    return False, running  # Despausa o jogo
+                else:
+                    print("ESC em menu desconhecido: Ignorando")
+                    return paused, running
+
+        # Delega para seções específicas (sem duplicar ESC)
         if self.current_menu == 'initial':
             start_game, running = self.initial_menu.handle_input(events, mouse_pos, running, is_initial=True)
             return start_game, running
@@ -52,16 +80,6 @@ class Menu:
                 paused, running = self.spells_section.handle_input(events, paused, running, mouse_pos)
             else:
                 paused, running = self.runes_section.handle_input(events, paused, running, mouse_pos)
-            for event in events:
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    print("Voltando ao menu principal do inventário via Esc")
-                    self.current_menu = 'main'
-                    self.main_menu.selected_item = 0
-                    self.spells_section.selected_item = 0
-                    self.spells_section.selected_section = 'spells'
-                    self.runes_section.selected_item = 0
-                    self.selected_spell = None
-                    self.selected_rune = None
         elif self.current_menu == 'controls':
             print("Chamando handle_input para menu de controles")
             _, running = self.initial_menu.handle_input(events, mouse_pos, running, is_initial=False)
@@ -77,12 +95,28 @@ class Menu:
             paused = True
 
         return paused, running
-
     def draw(self):
         """Desenha o menu apropriado com base no estado."""
+        # --- Carrega o fundo apenas uma vez ---
+        if not hasattr(self, "background_image"):
+            try:
+                self.background_image = pygame.image.load("assets/ui/menu_background.png").convert()
+                self.background_image = pygame.transform.scale(self.background_image, (self.width, self.height))
+            except Exception as e:
+                print(f"Erro ao carregar background do menu: {e}")
+                # fallback em caso de erro
+                self.background_image = pygame.Surface((self.width, self.height))
+                self.background_image.fill((0, 0, 0))
+
+        # --- Desenha o fundo ---
+        self.screen.blit(self.background_image, (0, 0))
+
+        # leve esmaecimento sobre a imagem
         overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 255) if self.current_menu == 'inventory' else (0, 0, 0, 180))
+        overlay.fill((0, 0, 0, 100))
         self.screen.blit(overlay, (0, 0))
+
+        # --- Continua com o desenho do menu ---
         mouse_pos = pygame.mouse.get_pos()
         if self.current_menu == 'initial':
             self.initial_menu.draw(mouse_pos, is_initial=True)
@@ -94,9 +128,6 @@ class Menu:
                 self.current_menu = 'main'
                 self.main_menu.draw(mouse_pos)
                 return
-            overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 255))
-            self.screen.blit(overlay, (0, 0))
             self.spells_section.draw(mouse_pos)
             self.runes_section.draw(mouse_pos)
             self.description_section.draw(mouse_pos)

@@ -67,13 +67,20 @@ class StatusBar(Ui):
         health_container_x = panel_pos[0] + self.icon_space
         self.screen.blit(self.status_bar_img, (health_container_x, health_container_y))
         # Draw health bar inside the container, shifted left
-        health_ratio = player.health / player.max_health
-        health_size = (int(self.health_full_size[0] * health_ratio), self.health_full_size[1])
+        health_ratio = 0 if player.max_health <= 0 else player.health / player.max_health
+        health_ratio = max(0, min(health_ratio, 1))  # Garante entre 0 e 1
+
+        # Calcula o tamanho da barra com limite mínimo de 1 pixel
+        width = max(1, int(self.health_full_size[0] * health_ratio))
+        height = max(1, self.health_full_size[1])
+        health_size = (width, height)
+
         scaled_health = pygame.transform.scale(self.health_bar_img, health_size)
         health_pos = (
             health_container_x + padding - left_shift,
             health_container_y + (self.status_bar_size[1] - self.health_full_size[1]) / 2
         )
+
         self.screen.blit(scaled_health, health_pos)
         # Draw shield bar over health bar if shield_health > 0
         if player.shield_health > 0:

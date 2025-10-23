@@ -140,7 +140,7 @@ class Level:
 
         for obj in object_group.findall("object"):
             id_ = obj.get("id")
-            if obj.get("type") == "spawn" and obj.get("name") == "hammer_bot" or obj.get("name") == "drone_bot" and id_ in self.persistent_dead_ids:
+            if obj.get("type") == "spawn" and (obj.get("name") == "hammer_bot" or obj.get("name") == "drone_bot") and id_ in self.persistent_dead_ids:
                 continue
             new_obj = self.entity_manager.object_factory.create_object(obj, player_spawn)
             if new_obj:

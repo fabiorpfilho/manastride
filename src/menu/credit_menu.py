@@ -19,13 +19,6 @@ class CreditMenu:
 
     def draw(self, mouse_pos):
         """Desenha o menu de créditos."""
-        # Gradiente de fundo
-        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        for y in range(self.height):
-            alpha = 180 + (y / self.height) * 50  # Gradiente de 180 a 230 de opacidade
-            overlay.fill((0, 0, 0, int(alpha)), (0, y, self.width, 1))
-        self.menu.screen.blit(overlay, (0, 0))
-
         # Título
         title = "Créditos"
         title_text = self.title_font.render(title, True, (255, 255, 255))
@@ -66,12 +59,7 @@ class CreditMenu:
     def handle_input(self, events, mouse_pos, running):
         """Processa entrada para o menu de créditos."""
         for event in events:
-            if event.type == pygame.KEYDOWN:
-                if event.key in [pygame.K_RETURN, pygame.K_ESCAPE]:
-                    print("Voltando ao menu principal via tecla Enter ou Esc")
-                    self.menu.current_menu = 'main'  # Volta ao menu principal
-                    self.menu.main_menu.selected_item = 0
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 print("Clique do mouse detectado no menu de créditos")
                 button_rect = self.button_font.render("Voltar (Enter/Esc)", True, (255, 255, 255)).get_rect(
                     center=(self.width // 2, self.height // 2 + 300))

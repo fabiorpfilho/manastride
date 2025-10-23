@@ -27,13 +27,6 @@ class ScoreList:
 
     def draw(self, mouse_pos):
         """Desenha a tela de lista de pontuações com paginação."""
-        # Gradiente de fundo
-        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        for y in range(self.height):
-            alpha = 180 + (y / self.height) * 50  # Gradiente de 180 a 230 de opacidade
-            overlay.fill((0, 0, 0, int(alpha)), (0, y, self.width, 1))
-        self.menu.screen.blit(overlay, (0, 0))
-
         # Título
         title = "Pontuações"
         title_text = self.title_font.render(title, True, (255, 255, 255))
@@ -122,11 +115,7 @@ class ScoreList:
 
         for event in events:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE:
-                    print("Voltando ao menu inicial via tecla Enter/Esc")
-                    self.menu.current_menu = 'initial'
-                    self.menu.initial_menu.selected_item = 0
-                elif event.key == pygame.K_LEFT and self.current_page > 0:
+                if event.key == pygame.K_LEFT and self.current_page > 0:
                     print("Página anterior selecionada via tecla Left")
                     self.current_page -= 1
                 elif event.key == pygame.K_RIGHT and self.current_page < max_page:

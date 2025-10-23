@@ -76,13 +76,6 @@ class MainMenu:
         self.menu_rects = []
         self.hovered_item = None
 
-        # Gradiente de fundo
-        overlay = pygame.Surface((self.menu.width, self.menu.height), pygame.SRCALPHA)
-        for y in range(self.menu.height):
-            alpha = 180 + (y / self.menu.height) * 50  # Gradiente de 180 a 230 de opacidade
-            overlay.fill((0, 0, 0, int(alpha)), (0, y, self.menu.width, 1))
-        self.menu.screen.blit(overlay, (0, 0))
-
         # Título
         title = "Menu"
         title_text = self.title_font.render(title, True, (255, 255, 255))

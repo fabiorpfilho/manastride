@@ -18,7 +18,7 @@ class GameController:
         self.width = width
         self.height = height
         self.screen = pygame.display.set_mode((self.width, self.height))
-        self.starter_level = "starter"
+        self.starter_level = "level_3"
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
         self.running = True
@@ -66,27 +66,25 @@ class GameController:
 
     def handle_events(self, events):
         """Handle input events like quitting and pausing."""
+        esc_consumed = False  # ← flag novo
+
         for event in events:
             if event.type == pygame.QUIT:
                 self.logger.info("Evento QUIT recebido - saindo do jogo")
                 self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    if self.game_ended:
-                        self.logger.info("Tecla ESC pressionada na tela de fim - saindo do jogo")
-                        self.running = False
-                    elif self.game_started:
-                        self.logger.info("Tecla ESC pressionada - alternando pausa")
-                        self.paused = not self.paused
-                        if not self.paused:
-                            self.logger.info("Jogo retomado")
-                            self.menu.selected_menu_item = 0
-                            self.menu.current_menu = 'main'
-                        else:
-                            self.menu.current_menu = 'main'
-                    else:
-                        self.logger.info("Tecla ESC pressionada no menu inicial - saindo do jogo")
-                        self.running = False
+
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                if not self.paused:
+                    # Apenas pausa o jogo — não deixa o Menu tratar o mesmo ESC
+                    self.logger.info("Tecla ESC pressionada - pausando jogo")
+                    self.paused = True
+                    self.menu.current_menu = 'main'
+                    self.menu.selected_menu_item = 0
+                    esc_consumed = True  # ← marca que o evento já foi usado
+
+        return esc_consumed
+
+
 
     def process_main_menu(self, events, mouse_pos):
         """Handle the main menu state before the game starts."""
@@ -182,14 +180,19 @@ class GameController:
             events = pygame.event.get()
             mouse_pos = pygame.mouse.get_pos()
 
-            self.handle_events(events)
+            # Chama handle_events e verifica se o ESC foi usado
+            esc_consumed = self.handle_events(events)
 
             if self.game_ended:
                 self.process_game_end(events)
             elif not self.game_started:
                 self.process_main_menu(events, mouse_pos)
             else:
-                self.process_gameplay(events, delta_time, mouse_pos)
+                # ⚠️ só envia eventos ao menu se o ESC não foi processado neste frame
+                if esc_consumed and self.paused:
+                    self.menu.draw()
+                else:
+                    self.process_gameplay(events, delta_time, mouse_pos)
 
             pygame.display.flip()
 
