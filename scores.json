@@ -88,5 +88,10 @@
         "name": "Fabio2",
         "score": 300,
         "timestamp": "2025-10-22 21:54:10"
+    },
+    {
+        "name": "An\u00f4nimo",
+        "score": 300,
+        "timestamp": "2025-10-29 20:09:58"
     }
 ]
