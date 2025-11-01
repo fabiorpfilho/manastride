@@ -23,10 +23,19 @@ class Drone(Character):
         self.current_frame = 0
         self.animation_timer = 0
         self.marked_for_removal = False
+        self.is_dying = False
         self.facing_right = True
+
+        # NOVO: Controle de morte com queda
+        self.death_falling = False
+        self.death_grounded = False
+        self.death_bounce_frame = False
+        self.death_remove_timer = 0  # para remoção após 1s no chão
 
         self.animation_speeds = {
             self.animation_manager.AnimationType.WALK: 0.5,
+            self.animation_manager.AnimationType.HURT: 0.1,
+            self.animation_manager.AnimationType.DEATH: 0.15,
         }
 
         self.add_collider((0, 0), self.size, type='body', active=True)
@@ -40,19 +49,14 @@ class Drone(Character):
         self.levitation_timer = 0
 
         # Parâmetros de dano
-        self.is_hit = False
-        self.hit_timer = 0
-        self.hit_duration = 0.5  # segundos de invulnerabilidade e piscada
-        self.knockback_strength = 10  # força do empurrão
-        self.blink_interval = 0.2  # intervalo entre piscadas
-        self.blink_timer = 0
+        self.is_hurt = False
 
-        # 🔹 Carrega animações
+        # Carrega animações
         if self.animation_manager:
             self.animation_manager.load_animations_from_json(
                 self.size,
-                image_path="assets/drone_bot/drone_bot.png",
-                json_path="assets/drone_bot/drone_bot.json"
+                image_path="assets/drone_bot/DroneBotSpriteSheet.png",
+                json_path="assets/drone_bot/DroneBotSpriteSheet.json"
             )
 
             if not self.animation_manager.animationList:
@@ -62,7 +66,6 @@ class Drone(Character):
             else:
                 self.set_animation(self.animation_manager.AnimationType.WALK)
 
-                # Define imagem padrão como o primeiro frame da animação de andar
                 walk_anim = next(
                     (a for a in self.animation_manager.animationList 
                      if a.type == self.animation_manager.AnimationType.WALK),
@@ -73,6 +76,9 @@ class Drone(Character):
                 else:
                     self.default_image = pygame.Surface(self.size)
                     self.default_image.fill((255, 0, 0))
+        else:
+            self.default_image = pygame.Surface(self.size)
+            self.default_image.fill((255, 0, 0))
 
         # Define a imagem inicial
         self.image = self.default_image
@@ -83,31 +89,20 @@ class Drone(Character):
         """Movimento flutuante, animação e efeitos de dano."""
         self.levitation_timer += delta_time
 
-        # Knockback (se foi atingido recentemente)
-        if self.is_hit:
-            self.hit_timer += delta_time
-            self.blink_timer += delta_time
-
-            # Piscar visível/invisível
-            if self.blink_timer >= self.blink_interval:
-                self.blink_timer = 0
-                self.visible = not getattr(self, "visible", True)
-
-            # Finaliza o efeito de dano
-            if self.hit_timer >= self.hit_duration:
-                self.is_hit = False
-                self.visible = True
-                self.hit_timer = 0
-                self.speed_vector.x = 0  # para o knockback
-
         # Movimento normal
-        if not self.is_hit:
+        if not self.is_hurt and not self.is_dying:
             self.speed_vector.x = self.speed if self.facing_right else -self.speed
 
         # Atualiza posição
-        self.position.x += self.speed_vector.x * delta_time
-        levitation_offset = math.sin(self.levitation_timer * self.levitation_speed) * self.levitation_amplitude
-        self.position.y = self.base_y + levitation_offset
+        if self.is_dying and self.death_falling:
+            # Aplica gravidade apenas durante a queda
+            self.speed_vector.y += self.gravity * delta_time
+            self.position.y += self.speed_vector.y * delta_time
+            self.position.x += self.speed_vector.x * delta_time
+        elif not self.is_dying:
+            self.position.x += self.speed_vector.x * delta_time
+            levitation_offset = math.sin(self.levitation_timer * self.levitation_speed) * self.levitation_amplitude
+            self.position.y = self.base_y + levitation_offset
 
         # Atualiza animação
         self.update_animation(delta_time)
@@ -117,17 +112,74 @@ class Drone(Character):
 
 
     def update_animation(self, delta_time):
-        """Atualiza a animação de voo/andar."""
         if not self.animation_manager or not self.current_animation:
-            self.image = self.default_image
             return
+
+        if self.is_dying:
+            self.animation_timer += delta_time
+            animation_speed = self.animation_speeds.get(self.animation_manager.AnimationType.DEATH, 0.15)
+            death_anim = self.current_animation
+            total_frames = len(death_anim.animation) if death_anim.animation else 0
+
+            if total_frames < 6:
+                self.update_image()
+                return
+
+            if self.animation_timer >= animation_speed:
+                self.animation_timer -= animation_speed
+
+                # FASE 1: Anima até o frame 4
+                if self.current_frame < 4:
+                    self.current_frame += 1
+
+                # FASE 2: Alterna entre 3 e 4 enquanto cai
+                elif self.current_frame == 4 and self.death_falling:
+                    self.death_bounce_frame = not self.death_bounce_frame
+                    self.current_frame = 3 if self.death_bounce_frame else 4
+
+                # FASE 3: Ao tocar o chão, vai para frame 5
+                elif self.death_grounded and self.current_frame < 5:
+                    self.current_frame = 5
+
+                # FASE 4: Mantém no frame 5 e conta para remoção
+                elif self.current_frame >= 5:
+                    self.current_frame = 5
+                    self.death_remove_timer += delta_time
+                    if self.death_remove_timer > 1.0:
+                        self.marked_for_removal = True
+
+                self.update_image()
+
+            return  # pula o resto da lógica de animação
+
+        if self.is_hurt:
+            self.animation_timer += delta_time
+            animation_speed = self.animation_speeds.get(self.animation_manager.AnimationType.HURT, 0.1)
+            if self.animation_timer >= animation_speed:
+                self.animation_timer -= animation_speed
+                self.current_frame += 1
+                if self.current_frame >= len(self.current_animation.animation):
+                    self.current_frame = 0
+                    self.is_hurt = False
+                    self.colliders[2].active = True  # Re-enable attack_box
+                    self.colliders[0].active = True  # Re-enable body
+                    self.set_animation(self.animation_manager.AnimationType.IDLE1)
+                self.update_image()
+            return
+
+        if abs(self.speed_vector.x) > 0.1:
+            self.set_animation(self.animation_manager.AnimationType.WALK)
+        else:
+            self.set_animation(self.animation_manager.AnimationType.IDLE1)
 
         self.animation_timer += delta_time
         animation_speed = self.animation_speeds.get(self.current_animation.type, 0.1)
-
         if self.animation_timer >= animation_speed:
             self.animation_timer -= animation_speed
-            self.current_frame = (self.current_frame + 1) % len(self.current_animation.animation)
+            if self.current_animation.type == self.animation_manager.AnimationType.JUMP:
+                self.current_frame = min(self.current_frame + 1, len(self.current_animation.animation) - 1)
+            else:
+                self.current_frame = (self.current_frame + 1) % len(self.current_animation.animation)
             self.update_image()
 
 
@@ -155,11 +207,9 @@ class Drone(Character):
             if not self.facing_right:
                 sprite = pygame.transform.flip(sprite, True, False)
 
-            # Aplica o piscar
             if getattr(self, "visible", True):
                 self.image = sprite
             else:
-                # Cria uma imagem transparente (invisível)
                 self.image = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
         else:
             self.image = self.default_image
@@ -169,27 +219,40 @@ class Drone(Character):
 
     def handle_damage(self, enemy_damage, damage_source_position=None):
         """Recebe dano, aplica knockback e pisca."""
-        if self.health <= 0 or self.is_hit:
+        if self.health <= 0 or self.is_hurt:
             return
 
         self.health -= enemy_damage
         print(f"Drone sofreu {enemy_damage} de dano. Vida restante: {self.health}")
 
-        # Aplica knockback (empurrão para longe da fonte de dano)
-        direction = 1 if damage_source_position else -1
-        self.speed_vector.x = direction * self.knockback_strength
-
-        # Ativa piscar e invulnerabilidade temporária
-        self.is_hit = True
-        self.visible = True
-        self.hit_timer = 0
-        self.blink_timer = 0
-
-        # # Efeito sonoro
-        # pygame.mixer.Sound("assets/audio/soundEffects/hit_enemy.mp3").play()
-
-        # Verifica morte
         if self.health <= 0:
             pygame.mixer.Sound("assets/audio/soundEffects/enemy_death.mp3").play()
-            self.marked_for_removal = True
+            self.set_animation(self.animation_manager.AnimationType.DEATH)
+            self.is_dying = True
+            self.death_falling = True
+            self.death_grounded = False
+            self.death_bounce_frame = False
+            self.death_remove_timer = 0
+            self.marked_for_removal = False
+
+            # Desativa colisores de ataque e corpo (mas mantém body para colisão com chão)
+            self.colliders[2].active = False  # attack_box
+            self.colliders[0].active = True   # body (precisa detectar chão)
+
+            # Ativa gravidade apenas na morte
+            self.gravity = 800  # ajuste conforme necessário
+            self.speed_vector.y = -100  # leve impulso inicial para cima
+
+            # Opcional: knockback horizontal
+            direction = 1 if damage_source_position and damage_source_position[0] < self.position.x else -1
+            self.speed_vector.x = direction * 100
+
+        else:
+            self.set_animation(self.animation_manager.AnimationType.HURT)
+            self.is_hurt = True
             self.colliders[2].active = False
+            self.is_attacking = False
+            knockback_strength = 150
+            direction = 1 if damage_source_position and damage_source_position[0] < self.position.x else -1
+            self.speed_vector.x = direction * knockback_strength
+            self.speed_vector.y = -150

@@ -80,18 +80,25 @@ class CollisionManager:
                             dynamic_object.position.y -= altura_invasao + dynamic_collider.offset[1]
                             dynamic_object.speed_vector.y = 0
                             ground_collision_detected = True
+
+                            # DETECÇÃO ESPECÍFICA: Drone morreu e caiu no chão
+                            if (hasattr(dynamic_object, 'is_dying') and 
+                                dynamic_object.is_dying and 
+                                hasattr(dynamic_object, 'death_falling') and 
+                                dynamic_object.death_falling):
+                                dynamic_object.death_falling = False
+                                dynamic_object.death_grounded = True
+                                dynamic_object.speed_vector.y = 0
                         else:
                             dynamic_object.position.y += altura_invasao + dynamic_collider.offset[1]
                             dynamic_object.speed_vector.y = 0
 
                     dynamic_object.sync_position()
 
-
         self._detect_is_on_ground(ground_collision_detected, dynamic_object)
 
     def _handle_hurt_collision(self, dynamic_object, hurt_collider):
         for other_object in self.dynamic_objects:
-
             if other_object is dynamic_object:
                 continue
             
@@ -101,14 +108,11 @@ class CollisionManager:
             if other_object.tag == "projectile" and other_object.owner == dynamic_object:
                 return
             for other_collider in other_object.colliders:
-
                 if (
                     other_collider.type == "attack_box"
                     and hurt_collider.rect.colliderect(other_collider.rect)
                     and other_collider.active
                 ):
-
-                    # Só cause dano se o alvo ainda não foi atingido neste ataque
                     if hasattr(other_object, "already_hit_targets"):
                         if dynamic_object in other_object.already_hit_targets:
                             continue
@@ -116,7 +120,7 @@ class CollisionManager:
                         if other_object.tag == "player" or other_object.tag == "projectile":
                             other_object.handle_hit()
 
-                    dynamic_object.handle_damage(other_object.damage, other_object.facing_right)
+                    dynamic_object.handle_damage(other_object.damage, other_object.position)
                     if other_object.tag == "projectile":
                         other_object.marked_for_removal = True
                     return
@@ -130,8 +134,6 @@ class CollisionManager:
                 other_object.handle_pickup(dynamic_object)
                 dynamic_object.marked_for_removal = True
                 return
-
-
 
     def _detect_is_on_ground(self, ground_collision_detected, dynamic_object):
         if ground_collision_detected:

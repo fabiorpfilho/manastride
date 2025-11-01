@@ -62,7 +62,7 @@ class EntityManager:
                 # Verifica se o inimigo já está na lista temporária de mortos
                 print(f"Current dead IDs before rune generation: {current_dead_ids}")
                 
-            if not isinstance(entity, HammerBot):
+            if not isinstance(entity, (HammerBot, Drone)):
                 if all_sprites and entity in all_sprites:
                     all_sprites.remove(entity)
 
