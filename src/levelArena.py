@@ -1,6 +1,7 @@
 from level import Level
 import random
 from objects.dynamic_objects.hammer_bot import HammerBot
+from objects.dynamic_objects.drone import Drone
 from objects.static_objects.terrain import Terrain
 from objects.static_objects.door import Door
 from objects.dynamic_objects.player import Player
@@ -51,8 +52,8 @@ class LevelArena(Level):
             obj_data = self.entity_manager.object_factory.create_object(obj, player_spawn)
             if obj_data:
                 # Process other objects normally
-                if isinstance(obj_data, (Player, HammerBot, Rune)):
-                    is_enemy = isinstance(obj_data, HammerBot)
+                if isinstance(obj_data, (Player, HammerBot, Drone, Rune)):
+                    is_enemy = isinstance(obj_data, (HammerBot, Drone))
                     self.entity_manager.add_entity(obj_data, is_enemy=is_enemy)
                     self.all_sprites.append(obj_data)
                 else:  # Doors, alarms, and other static objects
@@ -196,13 +197,15 @@ class LevelArena(Level):
                     terrain.base_image = force_field_surface  # Store base image
                     terrain.image = pygame.transform.scale(force_field_surface, (size[0], 0))  # Initial image with zero height
                     terrain.rect = terrain.image.get_rect(bottomleft=(position.x, position.y + size[1]))
-                    terrain.colliders[0].size = Vector2(size[0], 0)  # Initial collider size
+                    terrain.colliders[0].size = Vector2(size)  # Initial collider size
                     terrain.colliders[0].rect = pygame.Rect(position.x, position.y + size[1], size[0], 0)
                     
                     # Add the terrain to the lists
                     self.static_objects.append(terrain)
                     self.all_sprites.append(terrain)
-                    pygame.mixer.Sound("assets/audio/soundEffects/door/boss-jump.wav").play()
+                    sound = pygame.mixer.Sound("assets/audio/soundEffects/door/boss-jump.wav")
+                    sound.set_volume(0.1)  # 0.0 = mudo, 1.0 = volume total
+                    sound.play()
                     self.logger.info("Terreno de campo de força adicionado com animação de crescimento no lugar da porta")
 
     def spawn_wave(self):

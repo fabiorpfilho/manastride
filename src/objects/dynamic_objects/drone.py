@@ -24,13 +24,12 @@ class Drone(Character):
         self.animation_timer = 0
         self.marked_for_removal = False
         self.is_dying = False
-        self.facing_right = True
+        self.facing_right = False
 
         # NOVO: Controle de morte com queda
         self.death_falling = False
         self.death_grounded = False
         self.death_bounce_frame = False
-        self.death_remove_timer = 0  # para remoção após 1s no chão
 
         self.animation_speeds = {
             self.animation_manager.AnimationType.WALK: 0.5,
@@ -41,6 +40,14 @@ class Drone(Character):
         self.add_collider((0, 0), self.size, type='body', active=True)
         self.add_collider((0, 0), self.size, type='hurt_box', active=True)
         self.add_collider((0, 0), self.size, type='attack_box', active=True)
+        player_check_size = (self.size[0] + 125, self.size[1] + 100)
+        player_check_offset = (-62, -50)  # -100 // 2
+        self.add_collider(player_check_offset, player_check_size, type='player_check', active=True)
+        self.player_detected = False
+        self.player_target = None
+        self.detection_cooldown = 0.2  # evita piscar detecção rapidamente
+        self.detection_timer = 0
+
 
         # Parâmetros de levitação
         self.base_y = position[1]
@@ -86,30 +93,68 @@ class Drone(Character):
 
 
     def update(self, delta_time):
-        """Movimento flutuante, animação e efeitos de dano."""
+        """Movimento flutuante, perseguição e efeitos de dano."""
         self.levitation_timer += delta_time
 
-        # Movimento normal
-        if not self.is_hurt and not self.is_dying:
-            self.speed_vector.x = self.speed if self.facing_right else -self.speed
+        # --- Gerenciamento de detecção ---
+        if self.player_detected:
+            if self.player_target is None:
+                self.player_detected = False
+            else:
+                self.detection_timer = 0
+        else:
+            self.detection_timer += delta_time
+            if self.detection_timer >= self.detection_cooldown:
+                self.player_target = None
 
-        # Atualiza posição
+        # --- Movimento ---
+        if not self.is_hurt and not self.is_dying:
+            if self.player_detected and self.player_target:
+                # Persegue o jogador nos eixos X e Y
+                dx = self.player_target.position.x - self.position.x
+                dy = self.player_target.position.y - self.position.y
+
+                self.facing_right = dx > 0
+
+                # Normaliza a direção (para não se mover mais rápido em diagonal)
+                distance = math.hypot(dx, dy)
+                if distance != 0:
+                    dir_x = dx / distance
+                    dir_y = dy / distance
+                else:
+                    dir_x = dir_y = 0
+
+                chase_speed = self.speed * 1.2
+                self.speed_vector.x = dir_x * chase_speed
+                self.speed_vector.y = dir_y * chase_speed
+
+            else:
+                # Patrulha normal (flutuando horizontalmente)
+                self.speed_vector.x = self.speed if self.facing_right else -self.speed
+                # Mantém o padrão de levitação suave no Y
+                levitation_offset = math.sin(self.levitation_timer * self.levitation_speed) * self.levitation_amplitude
+                self.position.y = self.base_y + levitation_offset
+                self.speed_vector.y = 0
+
+        # --- Atualiza posição ---
         if self.is_dying and self.death_falling:
-            # Aplica gravidade apenas durante a queda
             self.speed_vector.y += self.gravity * delta_time
             self.position.y += self.speed_vector.y * delta_time
             self.position.x += self.speed_vector.x * delta_time
         elif not self.is_dying:
             self.position.x += self.speed_vector.x * delta_time
-            levitation_offset = math.sin(self.levitation_timer * self.levitation_speed) * self.levitation_amplitude
-            self.position.y = self.base_y + levitation_offset
+            if self.player_detected and self.player_target:
+                # Persegue verticalmente enquanto detecta o player
+                self.position.y += self.speed_vector.y * delta_time + math.sin(self.levitation_timer * 4) * 0.5
+            else:
+                # Movimento flutuante já aplicado acima
+                pass
 
-        # Atualiza animação
+        # --- Atualiza animação ---
         self.update_animation(delta_time)
 
-        # Atualiza posição e imagem
+        # --- Atualiza posição e imagem ---
         self.sync_position()
-
 
     def update_animation(self, delta_time):
         if not self.animation_manager or not self.current_animation:
@@ -144,9 +189,7 @@ class Drone(Character):
                 # FASE 4: Mantém no frame 5 e conta para remoção
                 elif self.current_frame >= 5:
                     self.current_frame = 5
-                    self.death_remove_timer += delta_time
-                    if self.death_remove_timer > 1.0:
-                        self.marked_for_removal = True
+                    self.marked_for_removal = True
 
                 self.update_image()
 
@@ -232,12 +275,10 @@ class Drone(Character):
             self.death_falling = True
             self.death_grounded = False
             self.death_bounce_frame = False
-            self.death_remove_timer = 0
             self.marked_for_removal = False
 
             # Desativa colisores de ataque e corpo (mas mantém body para colisão com chão)
             self.colliders[2].active = False  # attack_box
-            self.colliders[0].active = True   # body (precisa detectar chão)
 
             # Ativa gravidade apenas na morte
             self.gravity = 800  # ajuste conforme necessário

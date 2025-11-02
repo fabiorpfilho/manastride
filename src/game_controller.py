@@ -18,7 +18,7 @@ class GameController:
         self.width = width
         self.height = height
         self.screen = pygame.display.set_mode((self.width, self.height))
-        self.starter_level = "starter"
+        self.starter_level = "level_4"
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
         self.running = True
@@ -150,12 +150,11 @@ class GameController:
                 else:
                     self.menu.player = self.player
                     self.current_level_name = level_name
-                    self.music_manager.load_music(self.current_level_name)
                     self.arena_music_loaded = False  # Reset flag ao carregar novo nível
             # Verificar ativação da arena e carregar música específica
             if isinstance(self.level, LevelArena) and self.level.arena_activated and not self.arena_music_loaded:
                 self.logger.info("Arena ativada - carregando música da arena")
-                self.music_manager.load_music("arena.mp3")  # Substitua "arena" pelo nome da música desejada
+                self.music_manager.load_music("Action 5 - Looped - Pure.wav")  # Substitua "arena" pelo nome da música desejada
                 self.arena_music_loaded = True
             if self.level.is_completed:
                 self.logger.info(f"Nível {self.current_level_name} concluído - exibindo tela de fim")

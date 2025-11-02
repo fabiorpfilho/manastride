@@ -1,89 +1,153 @@
 ### Relatório: Resumo das Alterações Realizadas no Código do Jogo
 
-Este relatório detalha as mudanças realizadas no código do jogo, com base na comparação entre a versão original do `Level` e as versões atuais de `Level`, `ObjectFactory`, e `EntityManager`, além das modificações discutidas ao longo da conversa. As alterações focam na refatoração para maior modularidade, correção de bugs, e implementação de novos comportamentos, com ênfase nos tópicos **Tópico 1: Fundamentos de Projeto Orientado a Objetos**, **Tópico 7: Padrões de Projeto**, **Tópico 8: Prática de Projeto, Análise Crítica e Melhoria Contínua**, e **Princípios SOLID**. As seções abaixo descrevem as mudanças, as versões finais de cada classe, os objetivos, e os tópicos aplicados.
+Este relatório detalha as mudanças realizadas no código do jogo, com base na comparação entre a versão original do `Level` e as versões atuais de `Level`, `ObjectFactory`, e `EntityManager`. As alterações incluem a criação da classe `LevelArena` para gerenciar ondas de inimigos, a transformação da classe `ObjectFactory` em uma classe estática, e a implementação de novos comportamentos. O foco está na modularidade, extensibilidade e aplicação dos tópicos **Tópico 1: Fundamentos de Projeto Orientado a Objetos**, **Tópico 7: Padrões de Projeto**, **Tópico 8: Prática de Projeto, Análise Crítica e Melhoria Contínua**, e **Princípios SOLID**. As seções abaixo descrevem as mudanças, as versões finais das classes, os objetivos, e os tópicos aplicados.
 
 ---
 
-#### 1. Criação do `ObjectFactory` (object_factory.py)
-**Objetivo**: Centralizar a criação de objetos do jogo (`Player`, `HammerBot`, `Rune`, `Door`, `Terrain`) em uma classe modular, eliminando a lógica de criação direta no `Level` e facilitando a extensibilidade para novos tipos de objetos, como chefes para uma arena.
+#### 1. Transformação do `ObjectFactory` em Classe Estática (object_factory.py)
+**Objetivo**: Tornar a classe `ObjectFactory` estática para eliminar a necessidade de instanciação contínua, já que seus métodos são usados brevemente para criar objetos e não requerem estado persistente, reduzindo overhead e simplificando o acesso.
 
 **Mudanças Principais**:
-- Criada a classe `ObjectFactory` com um dicionário `object_map` que mapeia pares `(type, name)` ou `(type, None)` a métodos de criação específicos (`_create_player`, `_create_hammer_bot`, `_create_rune`, `_create_door`).
-- Método `create_object` processa elementos XML do Tiled ou dicionários, delegando a criação aos métodos apropriados.
-- Método `_create_player` evita recriação do jogador, mantendo uma única instância e atualizando sua posição com `update_player_position`.
-- Métodos `_create_hammer_bot`, `_create_rune`, e `_create_door` extraem propriedades do XML (ex.: posição, tamanho, `rune_type`, `player_spawn`) para criar objetos.
-- Método `create_terrain` cria terrenos diretamente, usado para tiles do mapa.
+- Removido o construtor `__init__` e o atributo `player`, tornando todos os métodos estáticos com o decorador `@staticmethod`.
+- Ajustado `create_object` para receber `asset_loader` e `spell_system` como parâmetros, em vez de armazená-los como atributos.
+- Método `_create_player` agora verifica se o jogador já existe via um parâmetro opcional `existing_player`, retornando-o ou criando um novo.
+- Métodos `_create_hammer_bot`, `_create_rune`, e `_create_door` foram convertidos em estáticos, recebendo `asset_loader` e `spell_system` quando necessário.
+- Método `create_terrain` e `update_player_position` também convertidos em estáticos.
+- Mantido o dicionário `object_map` como variável de classe estática, mapeando pares `(type, name)` ou `(type, None)` a métodos de criação.
 - Adicionado suporte para evitar recriação de runas principais já coletadas e carregar imagens específicas para runas menores.
+
 
 **Tópicos Aplicados**:
 - **Tópico 1 (OO)**:
-  - **Encapsulamento**: Centraliza a criação de objetos em `ObjectFactory`, isolando a lógica de construção do `Level`.
-  - **Coesão**: Cada método (`_create_player`, `_create_hammer_bot`, etc.) tem uma única responsabilidade.
+  - **Encapsulamento**: Métodos estáticos isolam a lógica de criação, eliminando estado desnecessário.
+  - **Coesão**: Cada método estático (`_create_player`, `_create_hammer_bot`, etc.) tem uma única responsabilidade.
 - **Tópico 7 (Padrões)**:
-  - **Factory Pattern**: O `object_map` mapeia tipos e nomes a métodos de criação, permitindo extensibilidade.
-  - **Strategy Pattern**: Usado como inspiração no mapeamento de funções em `object_map`, que delega a criação a métodos específicos.
+  - **Factory Pattern**: O `object_map` mapeia tipos a métodos estáticos, mantendo extensibilidade.
+  - **Strategy Pattern**: Implicitamente, o mapeamento em `object_map` delega a criação a métodos específicos.
+- **Tópico 8 (Prática)**:
+  - **Análise Crítica**: Logging (ex.: `print`) rastreia criação de objetos.
+  - **Testabilidade**: Métodos estáticos permitem testar criação isoladamente.
 - **SOLID**:
-  - **S**: `ObjectFactory` é responsável apenas pela criação de objetos.
-  - **O**: Extensível para novos tipos de objetos via `object_map`.
-  - **L**: Objetos criados são tratados polimorficamente em `Level` e `EntityManager`.
+  - **S**: `ObjectFactory` foca apenas na criação de objetos.
+  - **O**: Extensível para novos tipos via `object_map`.
+  - **L**: Objetos criados são tratados polimorficamente.
 
 ---
 
-#### 2. Adaptação do `Level` para Usar `ObjectFactory` e `EntityManager` (level.py)
-**Objetivo**: Refatorar `Level` para delegar a criação de objetos ao `ObjectFactory` e a gestão de entidades dinâmicas ao `EntityManager`, simplificando a lógica, corrigindo o bug de portas sendo tratadas como entidades dinâmicas, e melhorando a modularidade.
+#### 2. Criação da Classe `LevelArena` (levelArena.py)
+**Objetivo**: Implementar uma classe `LevelArena` para gerenciar o spawn de inimigos em ondas, suportando arenas com múltiplos inimigos e facilitando a adição de novos comportamentos, como chefes, em níveis específicos.
+
+**Mudanças Principais**:
+- Criada a classe `LevelArena` para gerenciar ondas de inimigos em um nível, com suporte para spawn em posições pré-definidas.
+- Método `spawn_wave` usa `ObjectFactory.create_object` para criar inimigos (ex.: `HammerBot`) com base em configurações fornecidas (ex.: tipo, quantidade, posições).
+- Método `is_wave_completed` verifica se todos os inimigos da onda foram eliminados, integrando-se com `EntityManager.check_completion`.
+- Método `update` gerencia o spawn de inimigos em intervalos ou condições específicas (ex.: após eliminação da onda anterior).
+- Configuração de ondas via parâmetros (ex.: número de inimigos, tipo, posições, modificadores dos atributos), permitindo flexibilidade para arenas.
+- Integração com `EntityManager` para adicionar inimigos criados à lista de entidades dinâmicas.
+
+
+**Tópicos Aplicados**:
+- **Tópico 1 (OO)**:
+  - **Encapsulamento**: Isola a lógica de spawn de inimigos, integrando-se com `EntityManager`.
+  - **Coesão**: Métodos como `spawn_wave` e `is_wave_completed` têm responsabilidades claras.
+- **Tópico 7 (Padrões)**:
+  - **Factory Pattern**: Usa `ObjectFactory` para criar inimigos.
+  - **Strategy Pattern**: Configurações de ondas permitem diferentes estratégias de spawn.
+- **Tópico 8 (Prática)**:
+  - **Análise Crítica**: Logging rastreia spawns de inimigos.
+  - **Testabilidade**: Testar `spawn_wave` para verificar criação e adição de inimigos.
+- **SOLID**:
+  - **S**: `LevelArena` gerencia ondas; `EntityManager` gerencia entidades.
+  - **O**: Extensível para novos tipos de inimigos ou configurações de ondas.
+  - **L**: Inimigos são tratados polimorficamente via `EntityManager`.
+
+---
+
+#### 3. Adaptação do `Level` para Usar `ObjectFactory` Estático
+**Objetivo**: Refatorar `Level` para usar o `ObjectFactory` estático, e simplificar a lógica de criação e gestão de entidades.
 
 **Mudanças Principais (Comparação com a Versão Original)**:
 - **Remoção de Atributos**:
   - Original: `player`, `dynamic_objects`, e `enemies` gerenciavam entidades diretamente.
   - Atual: Substituídos por `entity_manager`, que delega a gestão de entidades dinâmicas.
 - **Inicialização**:
-  - Original: Criava `SpellSystem` e `AssetLoader` diretamente, sem `ObjectFactory`.
-  - Atual: Inicializa `ObjectFactory` e `EntityManager` em `__init__`, integrando-os com `spell_system` e `asset_loader`.
+  - Original: Criava `SpellSystem` e `AssetLoader` sem `ObjectFactory`.
+  - Atual: Remove a instanciação de `ObjectFactory`, usando seus métodos estáticos diretamente via `entity_manager`. Adiciona `levelArena` para níveis de arena.
 - **Método `_process_objects`**:
-  - Original: Criava objetos (`Player`, `HammerBot`, `Rune`, `Door`) diretamente, processando XML manualmente e adicionando portas a `dynamic_objects` incorretamente.
-  - Atual: Usa `entity_manager.object_factory.create_object` para criar objetos, adicionando entidades dinâmicas (`Player`, `HammerBot`, `Rune`) ao `entity_manager` com `add_entity` e objetos estáticos (`Door`) a `static_objects`.
+  - Original: Criava objetos diretamente, processando XML manualmente e adicionando portas a `dynamic_objects`.
+  - Atual: Usa `ObjectFactory.create_object` estático para criar objetos, adicionando entidades dinâmicas (`Player`, `HammerBot`, `Rune`) ao `entity_manager` e objetos estáticos (`Door`) a `static_objects`, corrigindo o bug de portas.
 - **Método `_process_tilemap`**:
   - Original: Criava `Terrain` diretamente.
-  - Atual: Usa `entity_manager.object_factory.create_terrain` para criar terrenos.
+  - Atual: Usa `ObjectFactory.create_terrain` estático.
 - **Método `update`**:
-  - Original: Iterava `dynamic_objects` com verificações `isinstance` para atualizar `Player`, `HammerBot`, `Rune`, e gerenciava projéteis/escudos diretamente.
-  - Atual: Delega atualizações ao `entity_manager.update`, que usa `update_map` para atualizações específicas, simplificando a lógica e gerenciando projéteis/escudos.
+  - Original: Iterava `dynamic_objects` com `isinstance` para atualizações e gerenciava projéteis/escudos.
+  - Atual: Delega atualizações ao `entity_manager.update`
 - **Método `reset`**:
   - Original: Reposicionava o jogador e recriava `enemies` diretamente.
-  - Atual: Usa `entity_manager.object_factory` para criar um novo `HammerBot` e reposicionar o jogador, recriando `EntityManager` para reiniciar entidades.
+  - Atual: Usa `ObjectFactory.create_object` estático para criar um `HammerBot` e reposicionar o jogador, reinicializando `entity_manager``.
 
 **Tópicos Aplicados**:
 - **Tópico 1 (OO)**:
-  - **Encapsulamento**: Delega criação de objetos ao `ObjectFactory` e gestão de entidades ao `EntityManager`, reduzindo acoplamento.
-  - **Coesão**: Métodos como `_process_objects` focam na inicialização, enquanto `update` orquestra o fluxo.
+  - **Encapsulamento**: Delega criação ao `ObjectFactory` estático e gestão de entidades ao `EntityManager`.
+  - **Coesão**: Métodos como `_process_objects` focam na inicialização, `update` orquestra o fluxo.
 - **Tópico 7 (Padrões)**:
-  - **Factory Pattern**: Usa `ObjectFactory` para criar objetos em `_process_objects` e `_process_tilemap`.
-  - **Strategy Pattern**: Atualizações delegadas ao `EntityManager.update` com `update_map`.
+  - **Factory Pattern**: Usa `ObjectFactory` estático para criar objetos.
+  - **Strategy Pattern**: Atualizações via `EntityManager.update` e ondas via `LevelArena`.
+- **Tópico 8 (Prática)**:
+  - **Análise Crítica**: Logging rastreia erros e transições.
+  - **Testabilidade**: Testar `_process_objects`
 - **SOLID**:
-  - **S**: `Level` orquestra o fluxo; `ObjectFactory` cria objetos; `EntityManager` gerencia entidades.
-  - **O**: Extensível para novos níveis e objetos.
-  - **L**: Objetos são tratados polimorficamente via `EntityManager`.
+  - **S**: `Level` orquestra; `ObjectFactory` cria; `EntityManager` gerencia entidades; `LevelArena` gerencia ondas.
+  - **O**: Extensível para novos níveis e tipos de inimigos.
+  - **L**: Objetos tratados polimorficamente.
 
 ---
 
-#### 3. Criação do `EntityManager` (entity_manager.py)
-**Objetivo**: Refatorar a lógica de atualização de entidades dinâmicas do `Level.update` para uma classe `EntityManager`, movendo a geração de runas menores e implementando a manutenção de corpos de inimigos em `all_sprites`.
+#### 4. Adaptação do `EntityManager` para Suportar `LevelArena` (entity_manager.py)
+**Objetivo**: Ajustar `EntityManager` para integrar com `LevelArena`, mantendo a geração de runas menores e a manutenção de corpos de inimigos em `all_sprites`.
 
 **Mudanças Principais**:
-- Criada a classe `EntityManager` com `update_map` para atualizar entidades (`Player`, `HammerBot`, `Rune`) via métodos específicos.
-- Métodos `add_entity` e `remove_entity` gerenciam entidades dinâmicas e inimigos.
-- Lógica de geração de runas menores movida para `_generate_minor_rune`, usando `ObjectFactory`.
-- Método `update` substitui o loop com `isinstance` do `Level`, gerenciando projéteis e escudos.
-- Adicionados `get_player` e `check_completion` para acessar o jogador e verificar conclusão.
-- Modificado `remove_entity` para manter inimigos em `all_sprites`, com corpos visíveis como sprites estáticos.
+- Removido o atributo `object_factory`, usando `ObjectFactory` estático diretamente em `_generate_minor_rune`.
+- Mantida a lógica de `update_map` para atualizar `Player`, `HammerBot`, e `Rune`.
+- Método `remove_entity` preserva corpos de inimigos em `all_sprites`.
+- Logging comentado para reduzir verbosidade, mas mantido para depuração opcional.
+
+
+**Tópicos Aplicados**:
+- **Tópico 1 (OO)**:
+  - **Encapsulamento**: Isola gestão de entidades, integrando com `ObjectFactory` estático.
+  - **Coesão**: Métodos como `add_entity` e `_generate_minor_rune` têm responsabilidades únicas.
+- **Tópico 7 (Padrões)**:
+  - **Strategy Pattern**: Usa `update_map` para atualizações específicas.
+  - **Factory Pattern**: Usa `ObjectFactory` estático para runas menores.
+- **Tópico 8 (Prática)**:
+  - **Análise Crítica**: Logging comentado para depuração opcional.
+  - **Testabilidade**: Testar `remove_entity` e geração de runas.
+- **SOLID**:
+  - **S**: `EntityManager` gerencia entidades; `LevelArena` gerencia ondas.
+  - **O**: Extensível para novos tipos de entidades.
+  - **L**: Entidades tratadas polimorficamente.
+
+---
+
+#### Resumo das Alterações
+1. **Transformação do `ObjectFactory` em Estático**:
+   - Converteu `ObjectFactory` em classe estática, eliminando instanciação e simplificando acesso.
+2. **Criação da Classe `LevelArena`**:
+   - Adicionada para gerenciar spawns de inimigos em ondas, com suporte para arenas.
+3. **Adaptação do `Level`**:
+   - Removeu instanciação de `ObjectFactory`, usando métodos estáticos.
+   - Integra `LevelArena` para níveis de arena, verificando conclusão de ondas.
+   - Corrigiu bug de portas em `dynamic_objects`.
+   - Simplificou `update` e `reset` com `EntityManager` e `LevelArena`.
+4. **Adaptação do `EntityManager`**:
+   - Removeu atributo `object_factory`, usando `ObjectFactory` estático.
+   - Mantida manutenção de corpos de inimigos em `all_sprites`.
 
 #### Impacto no Jogo
-- **Funcionalidade**: Modularidade aumentada com `ObjectFactory` e `EntityManager`.
+- **Funcionalidade**: Modularidade aumentada com `ObjectFactory` estático e `LevelArena`.
 - **Robustez**: Logging e validações melhoram depuração.
-- **Extensibilidade**: Suporta adição de novos objetos e níveis (ex.: arena).
+- **Extensibilidade**: Suporta arenas com ondas e novos tipos de inimigos.
 
-
-#### Sugestões para o Futuro
-- **LevelArena**: Criar classe para gerenciar waves de inimigos.
-- **SINGLETON**: Implementar SINGLETON em classes em que só é necessário e recomendado ter uma instância para evitar a possibilidade de conflitos caso acidentalmente seja gerado outra, como `EntityManager` e `CollisionManager`
-- **Retirar importação de classes de único uso**: Classes como `ObjectFactory` onde só é chamada breviamente para a uma função e depois não é mais usada não precisam ser instnaciadas todo o tempo, modificar ela para ser estatica e publicar seus métodos para outras classes acessarem sem a necessidade de importação e instanciação continua
+#### Planos para o Futuro
+- **Singleton Pattern**: Aplicar Singleton em `EntityManager` e `CollisionManager` para evitar múltiplas instâncias.

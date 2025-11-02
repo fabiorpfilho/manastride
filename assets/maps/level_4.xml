@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="26" height="27" tilewidth="24" tileheight="24" infinite="0" nextlayerid="3" nextobjectid="85">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="26" height="27" tilewidth="24" tileheight="24" infinite="0" nextlayerid="3" nextobjectid="94">
  <tileset firstgid="1" name="oak_woods_tileset" tilewidth="24" tileheight="24" tilecount="315" columns="21">
   <image source="oak_woods_v1.0/oak_woods_tileset.png" width="504" height="360"/>
  </tileset>
@@ -37,18 +37,24 @@
 </data>
  </layer>
  <objectgroup id="2" name="objects">
-  <object id="76" name="level_3" type="door" x="215.926" y="647.244" width="16.0909" height="46.7919" rotation="270.415">
+  <object id="76" name="level_3" type="door" x="216.593" y="645.661" width="16.0909" height="46.7919" rotation="270.415">
    <properties>
     <property name="player_spawn_x" value="230.00"/>
-    <property name="player_spawn_y" value="1.50"/>
+    <property name="player_spawn_y" value="30.00"/>
    </properties>
   </object>
   <object id="79" name="level_2" type="door" x="0.95455" y="432.727" width="16.0909" height="47.5455">
    <properties>
-    <property name="player_spawn_x" value="2117.95"/>
-    <property name="player_spawn_y" value="47.55"/>
+    <property name="player_spawn_x" value="2107.00"/>
+    <property name="player_spawn_y" value="153.33"/>
    </properties>
   </object>
   <object id="81" name="multiple" type="rune" x="543.333" y="50" width="32" height="32"/>
+  <object id="86" name="drone_bot" type="spawn" x="325" y="493.167" width="22" height="31"/>
+  <object id="87" name="drone_bot" type="spawn" x="225" y="182.5" width="22" height="31"/>
+  <object id="88" name="drone_bot" type="spawn" x="209" y="71.8333" width="22" height="31"/>
+  <object id="89" name="drone_bot" type="spawn" x="469.667" y="295.833" width="22" height="31"/>
+  <object id="92" name="fan" type="rune" x="158" y="148.667" width="32" height="32"/>
+  <object id="93" name="player" type="spawn" x="155.333" y="583" width="20" height="30"/>
  </objectgroup>
 </map>

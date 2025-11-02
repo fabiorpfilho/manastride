@@ -31,6 +31,8 @@ class CollisionManager:
     def _handle_collider_collisions(self, dynamic_object, dynamic_collider, objects_to_remove):
         if dynamic_collider.type in ("body"):
             self._handle_body_collision(dynamic_object, dynamic_collider, objects_to_remove)
+        elif dynamic_collider.type == "player_check":
+            self._handle_player_detection(dynamic_object, dynamic_collider)
         elif dynamic_collider.type == "hurt_box":
             self._handle_hurt_collision(dynamic_object, dynamic_collider)
         elif dynamic_collider.type == "item":
@@ -51,6 +53,10 @@ class CollisionManager:
                     if static_collider.type == "alarm":
                         if dynamic_object.tag == "player":
                             self.alarm_triggered = True
+                            if dynamic_object.dash_timer > 0:
+                                dynamic_object.dash_timer = 0
+                                dynamic_object.speed_vector.x = 0
+                                
                         continue                    
                     
 
@@ -151,3 +157,14 @@ class CollisionManager:
                 if on_platform:
                     break
             dynamic_object.on_ground = on_platform
+            
+            
+    def _handle_player_detection(self, dynamic_object, detection_collider):
+        if dynamic_object.tag != "enemy_npc":
+            return
+
+        for other_object in self.dynamic_objects:
+            if other_object.tag == "player" and detection_collider.rect.colliderect(other_object.rect):
+                dynamic_object.player_target = other_object
+                dynamic_object.player_detected = True
+                return

@@ -78,31 +78,42 @@ class ObjectFactory:
         return Drone(position, size, id=id)
     
     def create_wave_enemy(self, obj, custom_max_health=None, custom_speed=None):
-        """Cria um HammerBot a partir dos dados de wave_spawn, considerando can_fall e atributos personalizados."""
-        if obj.get("type") != "wave_spawn" or obj.get("name") != "hammer_bot":
+        """Cria um inimigo de onda (HammerBot ou Drone) com base nos dados de wave_spawn."""
+        if obj.get("type") != "wave_spawn":
             return None
-        
+
+        name = obj.get("name")
         position = (float(obj.get("x", 0)), float(obj.get("y", 0)))
         size = (float(obj.get("width", 0)), float(obj.get("height", 0)))
         id = obj.get("id")
-        
-        # Extract properties
+
         properties = obj.find("properties")
         can_fall = False
-        facing_right = True  # Default value
+        facing_right = False  # Default
         if properties is not None:
             for prop in properties.findall("property"):
                 if prop.get("name") == "can_fall":
                     can_fall = prop.get("value").lower() == "true"
                 elif prop.get("name") == "facing_right":
                     facing_right = prop.get("value").lower() == "true"
-        
-        # Criar HammerBot com atributos personalizados, se fornecidos
-        enemy = HammerBot(position, size, custom_max_health=custom_max_health, custom_speed=custom_speed, id=id)
-        enemy.can_fall = can_fall  # Define a propriedade can_fall
-        enemy.facing_right = facing_right  # Define a direção inicial
-        print(f"HammerBot criado em: {position}, can_fall: {can_fall}, max_health: {custom_max_health}, speed: {custom_speed}")
+
+        # Cria inimigo conforme o nome
+        if name == "hammer_bot":
+            enemy = HammerBot(position, size, custom_max_health=custom_max_health, custom_speed=custom_speed, id=id)
+            enemy.can_fall = can_fall
+            enemy.facing_right = facing_right
+        elif name == "drone_bot":
+            enemy = Drone(position, size, custom_max_health=custom_max_health, custom_speed=custom_speed, id=id)
+            print(f"[create_wave_enemy] Drone facing_right: {facing_right}")
+            # Drone pode ignorar can_fall
+            enemy.facing_right = facing_right
+        else:
+            print(f"[create_wave_enemy] Tipo de inimigo não suportado: {name}")
+            return None
+
+        print(f"Inimigo criado na onda: {name} em {position}, max_health: {custom_max_health}, speed: {custom_speed}")
         return enemy
+
 
     def _create_rune(self, obj: Union[Element, dict]):
         """Cria uma runa com base no elemento XML ou dicionário."""
