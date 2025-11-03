@@ -18,7 +18,7 @@ class GameController:
         self.width = width
         self.height = height
         self.screen = pygame.display.set_mode((self.width, self.height))
-        self.starter_level = "level_4"
+        self.starter_level = "starter"
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
         self.running = True
