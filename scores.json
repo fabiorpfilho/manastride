@@ -103,5 +103,10 @@
         "name": "Fabio",
         "score": 2100,
         "timestamp": "2025-11-02 07:20:38"
+    },
+    {
+        "name": "An\u00f4nimo",
+        "score": 1200,
+        "timestamp": "2025-11-03 23:56:35"
     }
 ]

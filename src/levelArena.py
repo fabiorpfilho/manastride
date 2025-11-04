@@ -23,6 +23,7 @@ class LevelArena(Level):
         super().__init__(screen, level_name, player, player_spawn, total_score, persistent_dead_ids, minor_rune_drop_state)
         
     def load_map(self, level_name, player=None, player_spawn=None):
+        print(f"Carregando mapa LevelArena: {level_name} com spawn em {player_spawn}")
         self.wave_spawns = []
         self.current_wave = 0
         self.wave_active = False
@@ -30,6 +31,13 @@ class LevelArena(Level):
         self.spawn_timer = 0.0
         self.arena_activated = False
         super().load_map(level_name, player, player_spawn)
+        
+        # CORREÇÃO: Limpa inimigos fantasmas do entity_manager
+        if hasattr(self.entity_manager, 'enemies'):
+            self.entity_manager.enemies = []
+        
+        # Opcional: limpa current_dead_ids se usado para tracking
+        self.current_dead_ids = []
         
     def _process_objects(self, player_spawn=None):
         print("Processando objetos no levelArena:")
@@ -254,3 +262,17 @@ class LevelArena(Level):
                             break
                 self.logger.info(f"Inimigo criado na onda {self.current_wave}: {position}, can_fall: {can_fall}, "
                                f"max_health: {custom_max_health}, speed: {custom_speed}")
+                
+    def reset(self):
+        player = self.entity_manager.get_player()
+        spawn_point = self.current_spawn if self.current_map != "level_3" else Vector2(32.83, 255.67)
+        print(f"Resetando LevelArena com spawn em {spawn_point}")
+
+        # CHAMA O load_map DO LEVELARENA (não do pai!)
+        self.load_map(self.current_map, player, spawn_point)
+
+        if player:
+            player.health = player.max_health
+            player.mana = player.max_mana
+        self.score = 0
+    

@@ -29,7 +29,6 @@ class Level:
             self.spell_system = player.spell_system
         else:
             self.spell_system = SpellSystem()
-        print("Minor rune drop state on level init:", minor_rune_drop_state)
         self.entity_manager = EntityManager(
             self.spell_system,
             ObjectFactory(self.asset_loader, self.spell_system, player),
@@ -213,7 +212,9 @@ class Level:
     def reset(self):
         player = self.entity_manager.get_player()
         self.entity_manager.entities = [player] if player else []
-        self.load_map(self.current_map, player, self.current_spawn)
+        spawn_point = self.current_spawn if not self.current_map == "level_3" else Vector2(32.83, 255.67)
+        print(f"Resetando nível para spawn em {spawn_point}")
+        self.load_map(self.current_map, player, spawn_point)
         if player:
             player.health = player.max_health
             player.mana = player.max_mana
