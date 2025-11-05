@@ -37,7 +37,7 @@
 </data>
  </layer>
  <objectgroup id="2" name="objects">
-  <object id="76" name="level_3" type="door" x="216.593" y="645.661" width="16.0909" height="46.7919" rotation="270.415">
+  <object id="76" name="level_3" type="door" x="215.926" y="641.328" width="16.0909" height="46.7919" rotation="270.415">
    <properties>
     <property name="player_spawn_x" value="230.00"/>
     <property name="player_spawn_y" value="30.00"/>
@@ -55,6 +55,5 @@
   <object id="88" name="drone_bot" type="spawn" x="209" y="71.8333" width="22" height="31"/>
   <object id="89" name="drone_bot" type="spawn" x="469.667" y="295.833" width="22" height="31"/>
   <object id="93" name="player" type="spawn" x="182.667" y="590.333" width="20" height="30"/>
-  <object id="94" name="fan" type="rune" x="131.333" y="585.333" width="32" height="32"/>
  </objectgroup>
 </map>

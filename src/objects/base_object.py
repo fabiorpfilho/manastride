@@ -24,7 +24,7 @@ class Object:
             # Usa camera.apply para transformar o retângulo do colisor
             collider_rect = camera.apply(collider.rect)
             # Desenha o colisor com o retângulo já escalado
-            # collider.draw_debug(surface, collider_rect)
+            collider.draw_debug(surface, collider_rect)
             
     def sync_position(self):
         self.rect.topleft = self.position

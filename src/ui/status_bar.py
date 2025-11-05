@@ -92,16 +92,24 @@ class StatusBar(Ui):
             self.screen.blit(scaled_shield, shield_pos)
 
         # Mana: icon + status_bar_img + bar
+        # --- MANA BAR ---
         mana_container_y = health_container_y + self.status_bar_size[1] + container_spacing
-        # Draw icon to the left of the container
+
+        # Ícone da staff
         staff_pos = (panel_pos[0], mana_container_y + (self.status_bar_size[1] - self.staff_icon.get_height()) / 2)
         self.screen.blit(self.staff_icon, staff_pos)
-        # Draw container (status_bar_img) to the right of the icon
+
+        # Container da barra de mana
         mana_container_x = panel_pos[0] + self.icon_space
         self.screen.blit(self.status_bar_img, (mana_container_x, mana_container_y))
-        # Draw mana bar inside the container, shifted left
-        mana_ratio = player.mana / player.max_mana
-        mana_size = (int(self.mana_full_size[0] * mana_ratio), self.mana_full_size[1])
+
+        # Calcula tamanho da barra de mana
+        mana_ratio = 0 if player.max_mana <= 0 else player.mana / player.max_mana
+        mana_width = int(self.mana_full_size[0] * mana_ratio)
+        mana_width = max(mana_width, 0)                 # <-- proteção rápida
+        mana_size = (mana_width, self.mana_full_size[1])
+
+        # Escala e desenha a barra
         scaled_mana = pygame.transform.scale(self.mana_bar_img, mana_size)
         mana_pos = (
             mana_container_x + padding - left_shift,

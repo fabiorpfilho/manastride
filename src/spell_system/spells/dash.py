@@ -40,23 +40,25 @@ class Dash(Spell):
         duration = self.attributes.get("duration", 0.15)
 
         is_multiple = self.major_rune and self.major_rune.name.lower() == "multiple"
+
         if is_multiple:
-            # Lógica para multiple: gerencia cargas e timers
-            if self.remaining_charges <= 0:
-                # Início de uma nova sequência: paga mana, define cargas máximas
+            # Só acessa remaining_charges se for multiple
+            if self.remaining_charges is None or self.remaining_charges <= 0:
                 self.remaining_charges = self.max_charges
                 mana_cost = self.attributes["mana_cost"]
             else:
-                # Dash adicional: sem custo de mana
                 mana_cost = 0
             distance = self.short_distance
             self.remaining_charges -= 1
+
             if self.remaining_charges > 0:
-                # Ainda tem cargas: reseta o delay para dar chance de usar mais
                 self.delay_timer = self.delay_duration
             else:
-                # Cargas esgotadas: inicia cooldown imediatamente, sem delay
                 self.delay_timer = 0
+        else:
+            # Dash normal (não multiple)
+            mana_cost = self.attributes.get("mana_cost", 25)
+            distance = self.attributes.get("distance", 150)
         print("Passou aqui 3")
         duration = max(duration, 1e-4)
         dash_speed = distance / duration
@@ -113,3 +115,17 @@ class Dash(Spell):
             self.current_cooldown = self.cooldown
         pygame.mixer.Sound("assets/audio/soundEffects/spells/dash.mp3").play()
         return mana_cost
+    
+        
+    def update_runes(self, rune):
+        print("Update rune")
+        super().update_runes(rune)
+        if rune and rune.name.lower() == "multiple":
+            print("Update rune 2")
+            self.remaining_charges = 0
+            self.delay_timer = 0.0
+            self.max_charges = 3
+            self.delay_duration = 1.0  # Tempo após o último dash para iniciar cooldown se cargas não esgotadas
+            self.short_distance = 100  # Distância curta para dashes multiple (ajuste se necessário)
+    
+        

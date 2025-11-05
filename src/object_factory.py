@@ -135,9 +135,9 @@ class ObjectFactory:
             rune_type = obj.get("rune_type", "major")
             effect = obj.get("effect", None)
 
-        if rune_type == "major" and self.player and any(rune.name == name for rune in self.player.spell_system.runes):
-            print(f"Runa '{name}' já coletada, não adicionada.")
-            return None
+        # if rune_type == "major" and self.player and any(rune.name == name for rune in self.player.spell_system.runes):
+        #     print(f"Runa '{name}' já coletada, não adicionada.")
+        #     return None
 
         if rune_type == "minor":
             image = self.asset_loader.load_image(f"assets/runes/asset32x32/minor_rune.png")
