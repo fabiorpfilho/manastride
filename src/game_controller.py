@@ -11,7 +11,7 @@ from music_manager import MusicManager
 from collections import defaultdict
 
 class GameController:
-    def __init__(self, width=1600, height=900, title="Teste de Execução"):
+    def __init__(self, width=1600, height=900, title="Manastride"):
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
         self.logger = logging.getLogger(__name__)
         pygame.init()
