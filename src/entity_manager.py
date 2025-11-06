@@ -116,6 +116,11 @@ class EntityManager:
                 update_func = self.update_map.get(type(entity))
                 if update_func:
                     update_func(entity, delta_time, static_objects, all_sprites)
+        for static in static_objects:
+            if hasattr(static, "marked_for_removal") and static.marked_for_removal:
+                static_objects.remove(static)
+                if static in all_sprites:
+                    all_sprites.remove(static)
 
         # Atualiza spell_system e adiciona projéteis/escudos
         player = self.get_player()

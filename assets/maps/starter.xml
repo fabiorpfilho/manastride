@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="58" height="23" tilewidth="24" tileheight="24" infinite="0" nextlayerid="3" nextobjectid="51">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="58" height="23" tilewidth="24" tileheight="24" infinite="0" nextlayerid="3" nextobjectid="53">
  <tileset firstgid="1" name="oak_woods_tileset" tilewidth="24" tileheight="24" tilecount="315" columns="21">
   <image source="oak_woods_v1.0/oak_woods_tileset.png" width="504" height="360"/>
  </tileset>
@@ -44,9 +44,10 @@
   <object id="34" name="hammer_bot" type="spawn" x="455.415" y="467.5" width="22" height="31"/>
   <object id="35" name="hammer_bot" type="spawn" x="847.415" y="466.5" width="22" height="31"/>
   <object id="36" name="hammer_bot" type="spawn" x="1020.75" y="157.5" width="22" height="31"/>
-  <object id="37" name="multiple" type="rune" x="744.748" y="105.333" width="32" height="32"/>
+  <object id="37" name="multiple" type="rune" x="860.748" y="106.333" width="32" height="32"/>
   <object id="38" name="hammer_bot" type="spawn" x="183.415" y="206.5" width="22" height="31"/>
   <object id="49" name="drone_bot" type="spawn" x="658" y="386.5" width="22" height="31"/>
   <object id="50" name="drone_bot" type="spawn" x="523" y="80.5" width="22" height="31"/>
+  <object id="51" name="fan" type="rune" x="989" y="365" width="32" height="32"/>
  </objectgroup>
 </map>

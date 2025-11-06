@@ -109,7 +109,10 @@ class Menu:
                 self.background_image.fill((0, 0, 0))
 
         # --- Desenha o fundo ---
-        self.screen.blit(self.background_image, (0, 0))
+        if self.current_menu == 'inventory':
+            self.screen.fill((0, 0, 0))  # fundo preto puro para o inventário
+        else:
+            self.screen.blit(self.background_image, (0, 0))
 
         # leve esmaecimento sobre a imagem
         overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)

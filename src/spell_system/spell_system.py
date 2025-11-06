@@ -25,9 +25,10 @@ class SpellSystem:
         spell_index = index - 1
         if 0 <= spell_index < len(self.spellbook) and self.spellbook[spell_index] is not None:
             spell = self.spellbook[spell_index]
-            if spell.validate() and spell.current_cooldown <= 0:
-                print(f"Casting spell at index {index} with direction {direction}")
+            print("owner : ", owner)
+            if spell.validate(owner) and spell.current_cooldown <= 0:
                 mana_cost = spell.execute(direction, owner)
+                print(f"Feitiço lançado: {spell.__class__.__name__}, custo de mana: {mana_cost}")
                 return mana_cost
             else:
                 print(f"Feitiço inválido ou em cooldown, index: {spell_index}")

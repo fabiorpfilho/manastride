@@ -4,6 +4,7 @@ from typing import List, Optional
 import pygame
 import math
 
+
 class Dash(Spell):
     def __init__(self, major_rune: Optional[Rune] = None, minor_runes: List[Rune] = None):
         super().__init__(
@@ -12,13 +13,14 @@ class Dash(Spell):
             minor_runes=minor_runes or [],
             cooldown=1.0  # Cooldown de 1 segundo entre dashes
         )
-        # Novo: Inicializa timers e variáveis para cooldown e multiple
+
+        # Inicialização das variáveis específicas de runas
         if self.major_rune and self.major_rune.name.lower() == "multiple":
             self.remaining_charges = 0
             self.delay_timer = 0.0
             self.max_charges = 3
-            self.delay_duration = 2.0  # Tempo após o último dash para iniciar cooldown se cargas não esgotadas
-            self.short_distance = 100  # Distância curta para dashes multiple (ajuste se necessário)
+            self.delay_duration = 2.0
+            self.short_distance = 100
         else:
             self.remaining_charges = None
             self.delay_timer = None
@@ -28,95 +30,117 @@ class Dash(Spell):
 
 
     def execute(self, direction: int, caster):
-        print("Passou aqui 1")
         """
         direction: 1 para direita, -1 para esquerda
         caster: Player ou outra entidade
         """
-        # Novo: Verifica se está em cooldown; se sim, não executa nada
+        print("Passou aqui 1")
 
         mana_cost = self.attributes.get("mana_cost", 10)
         distance = self.attributes.get("distance", 150)
         duration = self.attributes.get("duration", 0.15)
-
-        is_multiple = self.major_rune and self.major_rune.name.lower() == "multiple"
-
-        if is_multiple:
-            # Só acessa remaining_charges se for multiple
-            if self.remaining_charges is None or self.remaining_charges <= 0:
-                self.remaining_charges = self.max_charges
-                mana_cost = self.attributes["mana_cost"]
-            else:
-                mana_cost = 0
-            distance = self.short_distance
-            self.remaining_charges -= 1
-
-            if self.remaining_charges > 0:
-                self.delay_timer = self.delay_duration
-            else:
-                self.delay_timer = 0
-        else:
-            # Dash normal (não multiple)
-            mana_cost = self.attributes.get("mana_cost", 25)
-            distance = self.attributes.get("distance", 150)
-        print("Passou aqui 3")
         duration = max(duration, 1e-4)
+
+        # Escolhe qual dash executar
+        if self.major_rune and self.major_rune.name.lower() == "multiple":
+            mana_cost, distance = self._execute_multiple_dash(caster)
+        elif self.major_rune and self.major_rune.name.lower() == "fan":
+            dx, dy = self._execute_fan_dash(direction)
+        else:
+            dx, dy = self._execute_normal_dash(direction)
+
+        # Se o dash foi do tipo multiple, o dx/dy vem do último dash (horizontal)
+        if not (self.major_rune and self.major_rune.name.lower() == "fan"):
+            dx, dy = 1 if direction >= 0 else -1, 0
+
         dash_speed = distance / duration
 
-        # Determinar a direção do dash (dx, dy)
-        dx, dy = 0, 0
-        keys = pygame.key.get_pressed()
-
-        if self.major_rune and self.major_rune.name.lower() == "fan":
-            # Dash com runa "Fan" - suporta diagonais e vertical
-            if keys[pygame.K_UP] and not (keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]):
-                # Dash vertical puro (cima)
-                dx = 0
-                dy = -1
-            elif keys[pygame.K_UP] and keys[pygame.K_RIGHT]:
-                # Dash diagonal direita+cima
-                angle = math.radians(45) if direction >= 0 else math.radians(135)
-                dx = math.cos(angle)
-                dy = -math.sin(angle)
-            elif keys[pygame.K_UP] and keys[pygame.K_LEFT]:
-                # Dash diagonal esquerda+cima
-                angle = math.radians(135)  # 135 graus para diagonal
-                dx = math.cos(angle)
-                dy = -math.sin(angle)
-            else:
-                # Dash horizontal
-                dx = 1 if direction >= 0 else -1
-                dy = 0
-        else:
-            # Dash horizontal
-            dx = 1 if direction >= 0 else -1
-            dy = 0
-
-        # Normalizar o vetor de direção para garantir velocidade consistente
-        magnitude = math.sqrt(dx**2 + dy**2)
+        # Normaliza o vetor de direção
+        magnitude = math.sqrt(dx ** 2 + dy ** 2)
         if magnitude > 0:
             dx /= magnitude
             dy /= magnitude
 
-        # Aplicar a velocidade ao vetor do caster
+        # Aplica a velocidade
         caster.speed_vector.x = dx * dash_speed
         caster.speed_vector.y = dy * dash_speed
-
-        # Definir o temporizador do dash
         caster.dash_timer = duration
 
-        # Animação (usa DASH se disponível, senão WALK)
+        # Animação
         if hasattr(caster, "animation_manager"):
             anim = getattr(caster.animation_manager.AnimationType, "DASH",
                           caster.animation_manager.AnimationType.WALK)
             caster.set_animation(anim)
-        if not is_multiple or self.remaining_charges == 0:
+
+        # Som e cooldown
+        if not (self.major_rune and self.major_rune.name.lower() == "multiple" and self.remaining_charges > 0):
             print(f"Dash executado: direção {direction}, distância {distance}, duração {duration}, velocidade {dash_speed:.2f}")
             self.current_cooldown = self.cooldown
+
         pygame.mixer.Sound("assets/audio/soundEffects/spells/dash.mp3").play()
         return mana_cost
-    
-        
+
+
+    # ======================================================
+    # FUNÇÕES SEPARADAS POR TIPO DE DASH
+    # ======================================================
+
+    def _execute_normal_dash(self, direction: int):
+        """Dash horizontal simples."""
+        dx = 1 if direction >= 0 else -1
+        dy = 0
+        return dx, dy
+
+
+    def _execute_fan_dash(self, direction: int):
+        """Dash com runa 'Fan' — permite diagonais e vertical."""
+        keys = pygame.key.get_pressed()
+        dx, dy = 0, 0
+
+        if keys[pygame.K_UP] and not (keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]):
+            dx, dy = 0, -1
+        elif keys[pygame.K_UP] and keys[pygame.K_RIGHT]:
+            angle = math.radians(45) if direction >= 0 else math.radians(135)
+            dx = math.cos(angle)
+            dy = -math.sin(angle)
+        elif keys[pygame.K_UP] and keys[pygame.K_LEFT]:
+            angle = math.radians(135)
+            dx = math.cos(angle)
+            dy = -math.sin(angle)
+        else:
+            dx = 1 if direction >= 0 else -1
+            dy = 0
+
+        return dx, dy
+
+
+    def _execute_multiple_dash(self, caster):
+        """Dash com runa 'Multiple' — 3 dashes rápidos."""
+        # Quando as cargas acabaram (ou é o primeiro uso), reinicia e cobra mana
+        if self.remaining_charges is None or self.remaining_charges <= 0:
+            self.remaining_charges = self.max_charges
+            mana_cost = self.attributes["mana_cost"]
+            # 🔹 Define o custo de mana para zero após o primeiro uso,
+            #    para que as próximas cargas não cobrem novamente
+            self.mana_cost = 0
+        else:
+            # Dashes subsequentes na sequência múltipla não têm custo
+            mana_cost = 0
+
+        distance = self.short_distance
+        self.remaining_charges -= 1
+
+        if self.remaining_charges > 0:
+            self.delay_timer = self.delay_duration
+        else:
+            self.delay_timer = 0
+            # 🔹 Quando as cargas acabam, restaura o custo normal de mana
+            self.mana_cost = self.attributes["mana_cost"]
+
+        return mana_cost, distance
+
+
+
     def update_runes(self, rune):
         print("Update rune")
         super().update_runes(rune)
@@ -125,7 +149,5 @@ class Dash(Spell):
             self.remaining_charges = 0
             self.delay_timer = 0.0
             self.max_charges = 3
-            self.delay_duration = 1.0  # Tempo após o último dash para iniciar cooldown se cargas não esgotadas
-            self.short_distance = 100  # Distância curta para dashes multiple (ajuste se necessário)
-    
-        
+            self.delay_duration = 1.0
+            self.short_distance = 100

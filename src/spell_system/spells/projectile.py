@@ -52,8 +52,6 @@ class Projectile(Spell):
 
     def execute(self, direction: float, owner) -> None:
         """Executa o feitiço, criando projéteis com base nas runas."""
-        if not self.validate():
-            return
 
         effects = {k: v for k, v in self.attributes.items() if k in ["slow", "burn"]}
         minor_rune_names = [rune.name for rune in self.minor_runes]

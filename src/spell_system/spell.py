@@ -16,13 +16,17 @@ class Spell():
         self.current_cooldown = 0.0       # Timer de cooldown atual
         
 
-    def validate(self):
+    def validate(self, owner=None):
+        print("Validando spell...: ", self)
         """Verifica se as runas são válidas."""
         if self.major_rune and self.major_rune.rune_type != RuneType.MAJOR:
             return False
         if len(self.minor_runes) > 2:
             return False
         if any(r.rune_type != RuneType.MINOR for r in self.minor_runes):
+            return False
+        if owner.mana < self.mana_cost:
+            print("Mana insuficiente para lançar o feitiço.", self.mana_cost, owner.mana)
             return False
         return True
 

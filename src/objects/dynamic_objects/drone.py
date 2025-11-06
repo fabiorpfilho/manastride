@@ -285,7 +285,7 @@ class Drone(Character):
             self.speed_vector.y = -100  # leve impulso inicial para cima
 
             # Opcional: knockback horizontal
-            direction = 1 if damage_source_position and damage_source_position[0] < self.position.x else -1
+            direction = 1 if damage_source_position else -1
             self.speed_vector.x = direction * 100
 
         else:
@@ -294,6 +294,6 @@ class Drone(Character):
             self.colliders[2].active = False
             self.is_attacking = False
             knockback_strength = 150
-            direction = 1 if damage_source_position and damage_source_position[0] < self.position.x else -1
+            direction = 1 if damage_source_position else -1
             self.speed_vector.x = direction * knockback_strength
             self.speed_vector.y = -150

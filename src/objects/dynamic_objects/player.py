@@ -28,11 +28,9 @@ class Player(Character):
             self.animation_manager.AnimationType.ATTACK3: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Impact Hit 3.ogg"),
         }
 
-        # self.attack_hit_sfx = {
-        #     self.animation_manager.AnimationType.ATTACK1: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Parry 1.ogg"),
-        #     self.animation_manager.AnimationType.ATTACK2: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Parry 2.ogg"),
-        #     self.animation_manager.AnimationType.ATTACK3: pygame.mixer.Sound("assets/audio/soundEffects/sword/Sword Parry 3.ogg"),
-        # }
+        self.coyote_time_max = 0.15  # tempo máximo em segundos para o coyote frame
+        self.coyote_timer = 0.0      # contador de tempo no ar após sair do chão
+
         self.health = max_health
         
         self.is_attacking = False
@@ -140,6 +138,15 @@ class Player(Character):
         # Atualiza o temporizador de boost de mana
         if self.mana_boost_timer > 0:
             self.mana_boost_timer -= delta_time
+            
+        # Atualiza o coyote frame timer
+        if not self.on_ground:
+            if self.coyote_timer > 0:
+                self.coyote_timer -= delta_time
+        else:
+            # Reinicia o coyote frame ao tocar o chão
+            self.coyote_timer = self.coyote_time_max
+
 
     def handle_movement(self, keys, delta_time):
         # Ignorar entradas de movimento durante o dash
@@ -160,9 +167,11 @@ class Player(Character):
         if self.dash_timer > 0: 
             self.position.y += self.speed_vector.y * delta_time
 
-        if keys[pygame.K_SPACE] and self.on_ground:
+        if keys[pygame.K_SPACE] and (self.on_ground or self.coyote_timer > 0):
             self.speed_vector.y = -(self.jump_speed + JUMP_SPEED)
             self.on_ground = False
+            self.coyote_timer = 0  # consome o coyote frame
+
 
     def handle_attack(self, keys):
         if keys[pygame.K_q] and not self.is_casting and self.attack_cooldown_timer <= 0:
@@ -188,18 +197,12 @@ class Player(Character):
         for key, index in key_to_index.items():
             if keys[key] and self.spell_cooldown_timer <= 0:
                 if hasattr(self, 'spell_system'):
-                    spell_index = index - 1
-                    spell = self.spell_system.spellbook[spell_index]
-                    if self.mana >= spell.mana_cost:
-                        direction = 1 if self.facing_right else -1
-                        mana_cost = self.spell_system.cast_spell(index, direction , self)
-                        print(f"Feitiço lançado: {spell.__class__.__name__}, custo de mana: {mana_cost}")
-                        self.mana -= mana_cost
-                        self.spell_cooldown_timer = self.spell_cooldown
-                        self.set_animation(self.animation_manager.AnimationType.CASTING)
-                    else:
-                        print("Mana insuficiente para lançar o feitiço.")
-                        self.spell_cooldown_timer = self.spell_cooldown
+                    direction = 1 if self.facing_right else -1
+                    mana_cost = self.spell_system.cast_spell(index, direction , self)
+                    self.mana -= mana_cost
+                    self.spell_cooldown_timer = self.spell_cooldown
+                    # self.set_animation(self.animation_manager.AnimationType.CASTING)
+
 
     def apply_gravity(self, delta_time):
         # Não aplicar gravidade durante o dash

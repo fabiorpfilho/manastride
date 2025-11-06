@@ -40,7 +40,7 @@ class DescriptionSection:
             ),
             "multiple": (
                 "Projétil: Atira três projéteis um atrás do outro.\n"
-                "Investida: Permite um curto avanço várias vezes sem ativar recarga ou custo de mana por um pequeno período.\n"
+                "Investida: Avançe várias vezes sem custo ou recarga.\n"
                 "Escudo: Gera um escudo que absorve completamente os 3 próximos danos tomados."
             ),
         }
