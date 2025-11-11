@@ -2,9 +2,10 @@
 from ui.ui import Ui
 import pygame
 
+
 class Score(Ui):
-    def __init__(self, screen, asset_loader):
-        super().__init__(screen, asset_loader)
+    def __init__(self, screen):
+        super().__init__(screen)
         self.font = pygame.font.SysFont('arial', 24)
 
     def draw(self, score_value):

@@ -1,7 +1,3 @@
-import pygame
-import json
-import xml.etree.ElementTree as ET
-import os
 import logging
 from objects.dynamic_objects.rune import Rune
 from objects.dynamic_objects.player import Player
@@ -9,7 +5,6 @@ from objects.dynamic_objects.hammer_bot import HammerBot
 from objects.dynamic_objects.drone import Drone
 from collision_manager import CollisionManager
 from camera import Camera
-from spell_system.spell_system import SpellSystem
 from pygame.math import Vector2
 from asset_loader import AssetLoader
 from ui.score import Score
@@ -24,16 +19,7 @@ class Level:
         self.logger = logging.getLogger(__name__)
         self.screen = screen
         self.all_sprites = []
-        self.asset_loader = AssetLoader()
-        if player and hasattr(player, 'spell_system') and player.spell_system:
-            self.spell_system = player.spell_system
-        else:
-            self.spell_system = SpellSystem()
-        self.entity_manager = EntityManager(
-            self.spell_system,
-            ObjectFactory(self.asset_loader, self.spell_system, player),
-            minor_rune_drop_state=minor_rune_drop_state  # Pass the state
-        )
+        self.entity_manager = EntityManager.get_instance(minor_rune_drop_state)
         self.static_objects = []
         self.background = [0, 0, 0]
         self.background_layers = []
@@ -41,9 +27,9 @@ class Level:
         self.score = 0
         self.total_score = total_score
         self.level_name = level_name
-        self.status_bar = StatusBar(self.screen, self.asset_loader)
-        self.score_ui = Score(self.screen, self.asset_loader)
-        self.hotbar = HotBar(self.screen, self.asset_loader)
+        self.status_bar = StatusBar(self.screen)
+        self.score_ui = Score(self.screen)
+        self.hotbar = HotBar(self.screen)
         self.is_completed = False
         self.current_spawn = player_spawn
         self.persistent_dead_ids = persistent_dead_ids
@@ -57,7 +43,7 @@ class Level:
         self.static_objects = []
         self.current_map = level_name
         self.level_name = level_name
-        self.map_data = self.asset_loader.load_map_data(level_name)
+        self.map_data = AssetLoader.load_map_data(level_name)
         if self.map_data is None:
             self.logger.error("Falha ao carregar dados do mapa")
             return
@@ -70,14 +56,12 @@ class Level:
         world_width = self.map_width * self.tile_width
         world_height = self.map_height * self.tile_height
 
-        if not hasattr(self, 'camera'):
-            self.camera = Camera(self.screen.get_size(), world_width, world_height, zoom=4.0)
-        else:
-            self.camera.world_width = world_width
-            self.camera.world_height = world_height
+        self.camera = Camera.get_instance()
+        self.camera.set_screen_size(self.screen.get_size())
+        self.camera.reset_world(world_width, world_height, zoom=4.0)
         
-        self.tileset = self.asset_loader.load_tileset(self.map_data)
-        self.background_layers = self.asset_loader.load_background_layers(
+        self.tileset = AssetLoader.load_tileset(self.map_data)
+        self.background_layers = AssetLoader.load_background_layers(
             screen_size=self.screen.get_size(),
             world_size=(world_width, world_height),
             camera_zoom=self.camera.zoom
@@ -97,10 +81,14 @@ class Level:
         player = self.entity_manager.get_player()
 
         if player and player_spawn is not None:
-            self.entity_manager.object_factory.update_player_position(self.entity_manager.get_player(), player_spawn)
+            self.entity_manager.update_player_position(self.entity_manager.get_player(), player_spawn)
         self.current_spawn = Vector2(player.position)
         self.all_sprites = self.entity_manager.entities + self.static_objects
-        self.collision_manager = CollisionManager(self.entity_manager.entities, self.static_objects, world_width)
+        self.collision_manager = CollisionManager.get_instance(
+                    dynamic_objects=self.entity_manager.entities,
+                    static_objects=self.static_objects,
+                    world_width=world_width
+                )
 
     def _process_tilemap(self):
         """Processa a camada de blocos do mapa Tiled usando ObjectFactory para terrenos."""
@@ -122,7 +110,7 @@ class Level:
                     x = col_idx * self.tile_width
                     y = row_idx * self.tile_height
                     if gid in self.tileset:
-                        terrain = self.entity_manager.object_factory.create_terrain(
+                        terrain = ObjectFactory.create_terrain(
                             position=(x, y),
                             size=(self.tile_width, self.tile_height),
                             image=self.tileset[gid]
@@ -141,7 +129,10 @@ class Level:
             id_ = obj.get("id")
             if obj.get("type") == "spawn" and (obj.get("name") == "hammer_bot" or obj.get("name") == "drone_bot") and id_ in self.persistent_dead_ids:
                 continue
-            new_obj = self.entity_manager.object_factory.create_object(obj, player_spawn)
+            new_obj = ObjectFactory.create_object(
+                obj,
+                player_spawn,
+            )
             if new_obj:
                 if isinstance(new_obj, (Player, HammerBot, Rune, Drone)):
                     is_enemy = isinstance(new_obj, (HammerBot, Drone))
@@ -167,10 +158,11 @@ class Level:
             scaled_image = self.camera.apply_surface(sprite.image)
             self.screen.blit(scaled_image, offset_rect)
 
-        for spell in self.spell_system.spellbook:
+        player = self.entity_manager.get_player()
+
+        for spell in player.spell_system.spellbook:
             spell.draw(self.screen, self.camera)
             
-        player = self.entity_manager.get_player()
         if player:
             self.status_bar.draw(player)
             self.hotbar.draw(player)

@@ -2,89 +2,112 @@
 import os
 import pygame
 import xml.etree.ElementTree as ET
+from typing import Dict, List, Tuple, Optional
 
 
 class AssetLoader:
-    def __init__(self, base_path="assets/maps"):
-        self.base_path = base_path
+    # Caminho base padrão – pode ser sobrescrito por parâmetro
+    _DEFAULT_BASE_PATH = "assets/maps"
 
-    def load_map_data(self, level_name):
+    # ------------------------------------------------------------------ #
+    #  MÉTODOS ESTÁTICOS
+    # ------------------------------------------------------------------ #
+    @staticmethod
+    def load_map_data(level_name: str, base_path: str = _DEFAULT_BASE_PATH) -> Optional[ET.Element]:
         """Carrega e retorna o XML do mapa."""
+        file_path = os.path.join(base_path, f"{level_name}.xml")
         try:
-            tree = ET.parse(os.path.join(self.base_path, f"{level_name}.xml"))
+            tree = ET.parse(file_path)
             return tree.getroot()
         except FileNotFoundError:
-            print(f"Erro: O arquivo {level_name}.xml não foi encontrado!")
+            print(f"[AssetLoader] Erro: Arquivo não encontrado → {file_path}")
+            return None
+        except ET.ParseError as e:
+            print(f"[AssetLoader] Erro ao parsear XML: {file_path} → {e}")
             return None
 
-    def load_tileset(self, map_data):
-        """Carrega a imagem do tileset e divide em tiles individuais."""
+    @staticmethod
+    def load_tileset(
+        map_data: ET.Element,
+        base_path: str = _DEFAULT_BASE_PATH
+    ) -> Dict[int, pygame.Surface]:
+        """Carrega o tileset e retorna dicionário {gid: surface}."""
         tileset = map_data.find("tileset")
+        if not tileset:
+            print("[AssetLoader] Tileset não encontrado no mapa.")
+            return {}
+
         image_path = tileset.find("image").get("source")
         tile_width = int(tileset.get("tilewidth"))
         tile_height = int(tileset.get("tileheight"))
         columns = int(tileset.get("columns"))
         tilecount = int(tileset.get("tilecount"))
+        firstgid = int(tileset.get("firstgid"))
 
-        tileset_image = pygame.image.load(os.path.join(
-            self.base_path, image_path)).convert_alpha()
+        full_image_path = os.path.join(base_path, image_path)
+        try:
+            tileset_image = pygame.image.load(full_image_path).convert_alpha()
+        except FileNotFoundError:
+            print(f"[AssetLoader] Tileset não encontrado: {full_image_path}")
+            return {}
 
         tiles = {}
-        firstgid = int(tileset.get("firstgid"))
-        for gid in range(firstgid, firstgid + tilecount):
-            col = (gid - firstgid) % columns
-            row = (gid - firstgid) // columns
+        for gid_offset in range(tilecount):
+            gid = firstgid + gid_offset
+            col = gid_offset % columns
+            row = gid_offset // columns
             x = col * tile_width
             y = row * tile_height
-            tile_rect = pygame.Rect(x, y, tile_width, tile_height)
-            tile_image = tileset_image.subsurface(tile_rect)
-            tiles[gid] = tile_image
+            rect = pygame.Rect(x, y, tile_width, tile_height)
+            tile_surface = tileset_image.subsurface(rect)
+            tiles[gid] = tile_surface
 
         return tiles
 
-    def load_background_layers(self, screen_size, world_size, camera_zoom):
-        """Carrega e retorna as superfícies de fundo com parallax."""
-        parallax_factors = [
-            (0.2, f"{self.base_path}/oak_woods_v1.0/background/background_layer_1.png"),
-            (0.5, f"{self.base_path}/oak_woods_v1.0/background/background_layer_2.png"),
-            (0.8, f"{self.base_path}/oak_woods_v1.0/background/background_layer_3.png")
+    @staticmethod
+    def load_background_layers(
+        screen_size: Tuple[int, int],
+        world_size: Tuple[int, int],
+        camera_zoom: float,
+        base_path: str = _DEFAULT_BASE_PATH
+    ) -> List[Dict]:
+        """Carrega camadas de parallax."""
+        parallax_configs = [
+            (0.2, f"{base_path}/oak_woods_v1.0/background/background_layer_1.png"),
+            (0.5, f"{base_path}/oak_woods_v1.0/background/background_layer_2.png"),
+            (0.8, f"{base_path}/oak_woods_v1.0/background/background_layer_3.png"),
         ]
 
-        screen_width, screen_height = screen_size
-        world_width, world_height = world_size
+        screen_w, screen_h = screen_size
+        world_w, world_h = world_size
+        layers = []
 
-        background_layers = []
-
-        for factor, path in parallax_factors:
+        for factor, path in parallax_configs:
             try:
                 image = pygame.image.load(path).convert_alpha()
-                scaled_width = int(
-                    world_width / camera_zoom / factor) + screen_width
-                scaled_height = int(
-                    world_height / camera_zoom / factor) + screen_height
-                scaled_image = pygame.transform.scale(
-                    image, (scaled_width, scaled_height))
-                layer_surface = pygame.Surface(
-                    (scaled_width, scaled_height), pygame.SRCALPHA)
-                layer_surface.blit(scaled_image, (0, 0))
+                # Ajusta ao mundo + tela para evitar bordas
+                scaled_w = int(world_w / camera_zoom / factor) + screen_w
+                scaled_h = int(world_h / camera_zoom / factor) + screen_h
+                scaled = pygame.transform.scale(image, (scaled_w, scaled_h))
 
-                background_layers.append({
-                    'surface': layer_surface,
+                layer = {
+                    'surface': scaled,
                     'parallax_factor': factor,
                     'offset_x': 0,
                     'offset_y': 0
-                })
+                }
+                layers.append(layer)
             except FileNotFoundError:
-                print(f"Erro: Não foi possível carregar {path}")
-                continue
+                print(f"[AssetLoader] Background não encontrado: {path}")
 
-        return background_layers
+        return layers
 
-    def load_image(self, path):
-        """Carrega uma imagem de um caminho específico e retorna a superfície do Pygame."""
+    @staticmethod
+    def load_image(path: str) -> pygame.Surface:
+        """Carrega uma imagem genérica."""
         full_path = os.path.join(path)
         try:
             return pygame.image.load(full_path).convert_alpha()
         except FileNotFoundError:
-            print(f"Erro: Imagem não encontrada em {full_path}")
-            return pygame.Surface((0, 0), pygame.SRCALPHA)  # Retorna uma superfície vazia
+            print(f"[AssetLoader] Imagem não encontrada: {full_path}")
+            return pygame.Surface((32, 32), pygame.SRCALPHA)  # fallback

@@ -1,20 +1,21 @@
 import pygame
 from ui.ui import Ui
+from asset_loader import AssetLoader
 
 class StatusBar(Ui):
-    def __init__(self, screen, asset_loader):
-        super().__init__(screen, asset_loader)
+    def __init__(self, screen):
+        super().__init__(screen)
         # Scaling factors
         self.scale_factor = 3.0  # Increase size by 200% for bars and containers
         self.icon_scale_factor = 2.0  # Smaller scale for icons (33% smaller than bars)
 
         # Load images
-        self.status_bar_img = self.asset_loader.load_image("assets/ui/status_bar.png")
-        self.health_bar_img = self.asset_loader.load_image("assets/ui/health_bar.png")
-        self.heart_icon = self.asset_loader.load_image("assets/ui/heart1.png")
-        self.mana_bar_img = self.asset_loader.load_image("assets/ui/mana_bar.png")
-        self.staff_icon = self.asset_loader.load_image("assets/ui/staff.png")
-        self.shield_bar_img = self.asset_loader.load_image("assets/ui/shield_bar.png")
+        self.status_bar_img = AssetLoader.load_image("assets/ui/status_bar.png")
+        self.health_bar_img = AssetLoader.load_image("assets/ui/health_bar.png")
+        self.heart_icon = AssetLoader.load_image("assets/ui/heart1.png")
+        self.mana_bar_img = AssetLoader.load_image("assets/ui/mana_bar.png")
+        self.staff_icon = AssetLoader.load_image("assets/ui/staff.png")
+        self.shield_bar_img = AssetLoader.load_image("assets/ui/shield_bar.png")
 
         # Scale images
         self.status_bar_img = pygame.transform.scale(

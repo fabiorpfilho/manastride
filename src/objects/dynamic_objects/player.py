@@ -3,6 +3,7 @@ from config import SPEED, JUMP_SPEED, GRAVITY
 import pygame
 from typing import Optional
 from objects.animation_manager import AnimationManager
+from spell_system.spell_system import SpellSystem
 
 class Player(Character):
     def __init__(self, position, size, 
@@ -15,6 +16,7 @@ class Player(Character):
         self.tag = "player"
         self.current_animation = None
         self.current_frame = 0
+        self.spell_system = SpellSystem()
 
 
         self.attack_sfx = {

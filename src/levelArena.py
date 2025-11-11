@@ -1,3 +1,5 @@
+
+from config import SPEED
 from level import Level
 import random
 from objects.dynamic_objects.hammer_bot import HammerBot
@@ -8,7 +10,7 @@ from objects.dynamic_objects.player import Player
 from objects.dynamic_objects.rune import Rune
 from pygame.math import Vector2
 import pygame
-from config import SPEED
+from object_factory import ObjectFactory
 
 class LevelArena(Level):
     def __init__(self, screen, level_name, player, player_spawn=None, total_score=0, persistent_dead_ids=[], minor_rune_drop_state=None):
@@ -57,7 +59,7 @@ class LevelArena(Level):
                 self.wave_spawns.append(obj)
                 self.logger.info(f"Dados de wave_spawn salvos: {obj}")
                 continue  # Skip immediate creation
-            obj_data = self.entity_manager.object_factory.create_object(obj, player_spawn)
+            obj_data = ObjectFactory.create_object(obj, player_spawn)
             if obj_data:
                 # Process other objects normally
                 if isinstance(obj_data, (Player, HammerBot, Drone, Rune)):
@@ -245,7 +247,7 @@ class LevelArena(Level):
                 custom_speed = base_speed * 1.6  # Wave 3: +40% de velocidade
             
             # Criar inimigo com os valores modificados
-            enemy = self.entity_manager.object_factory.create_wave_enemy(
+            enemy = ObjectFactory.create_wave_enemy(
                 spawn_data, custom_max_health=custom_max_health, custom_speed=custom_speed
             )
             if enemy:

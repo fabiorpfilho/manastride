@@ -1,19 +1,20 @@
 from ui.ui import Ui
 import pygame
 import math
+from asset_loader import AssetLoader
 
 class HotBar(Ui):
-    def __init__(self, screen, asset_loader):
-        super().__init__(screen, asset_loader)
+    def __init__(self, screen):
+        super().__init__(screen)
         box_size = 50  # Tamanho de cada caixa (50x50 pixels)
         self.box_size = box_size
         self.box_spacing = 10  # Espaço entre caixas
 
         # Carregar ícones (assumindo que estão em assets/ui)
         try:
-            projectile_icon = self.asset_loader.load_image("assets/ui/spells/projectile.png")
-            dash_icon = self.asset_loader.load_image("assets/ui/spells/dash.png")
-            shield_icon = self.asset_loader.load_image("assets/ui/spells/shield.png")
+            projectile_icon = AssetLoader.load_image("assets/ui/spells/projectile.png")
+            dash_icon = AssetLoader.load_image("assets/ui/spells/dash.png")
+            shield_icon = AssetLoader.load_image("assets/ui/spells/shield.png")
         except Exception as e:
             print(f"Erro ao carregar ícones da hotbar: {e}")
             # Ícones de fallback (retângulos coloridos)

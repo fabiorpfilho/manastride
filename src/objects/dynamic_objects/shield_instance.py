@@ -2,7 +2,7 @@ from objects.entity_with_sprite import EntityWithSprite
 import pygame
 import math
 from typing import Optional, List
-import random
+from asset_loader import AssetLoader
 
 class ShieldInstance(EntityWithSprite):
     def __init__(self, position: tuple, health: float, owner, duration: float, hit_sfx: List[pygame.mixer.Sound] = None, is_multiple: bool = False):
@@ -32,7 +32,7 @@ class ShieldInstance(EntityWithSprite):
             2: "assets/spells/multiple_shield2.png",
             1: "assets/spells/multiple_shield3.png"
         }
-        self.image = self.asset_loader.load_image("assets/spells/shield.png" if not is_multiple else self.sprite_states.get(health, "assets/spells/multiple_shield1.png"))
+        self.image = AssetLoader.load_image("assets/spells/shield.png" if not is_multiple else self.sprite_states.get(health, "assets/spells/multiple_shield1.png"))
         self.image = self.image.convert_alpha()  # Garante suporte a alpha
 
     def update(self, delta_time: float, owner_shield_health, on_ground: bool):
@@ -88,7 +88,7 @@ class ShieldInstance(EntityWithSprite):
             # random.choice(self.hit_sfx).play()
             self.health -= 1  # Decrementa uma vida, absorvendo o dano completamente
             if self.health > 0:
-                self.image = self.asset_loader.load_image(self.sprite_states.get(self.health, "assets/spells/multiple_shield3.png"))
+                self.image = AssetLoader.load_image(self.sprite_states.get(self.health, "assets/spells/multiple_shield3.png"))
                 self.image = self.image.convert_alpha()
             else:
                 self.marked_for_removal = True  # Remove após o terceiro hit
